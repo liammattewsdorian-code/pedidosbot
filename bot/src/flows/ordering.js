@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { formatMoney } from '../lib/utils.js';
 
 /**
  * Flujo de toma de pedido. Parsea texto libre y arma carrito.
@@ -134,8 +135,4 @@ function parseOrderText(text, products) {
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function formatMoney(amount, currency = 'DOP') {
-  return amount.toLocaleString('es-DO', { style: 'currency', currency });
 }

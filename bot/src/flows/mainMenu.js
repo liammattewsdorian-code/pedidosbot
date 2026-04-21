@@ -22,13 +22,23 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
     const greeting = tenant.welcomeMessage ||
       `¡Hola! 👋 Bienvenido a *${tenant.name}*.\n\n¿En qué te puedo ayudar hoy?`;
 
-    const options = (isEnglish && tenant.plan === 'PREMIUM') ? englishMenuOptions() : mainMenuOptions(tenant);
-    const footer = isEnglish ? `_Reply with the option number or type "menu"._` : `_Responde con el número de la opción o escribe "menu"._`;
+    const rows = [
+      { id: '1', title: '🛒 Pedir ahora', description: 'Ver menú y ordenar' },
+      { id: '2', title: '📍 Ubicación', description: '¿Dónde estamos?' },
+      { id: '3', title: '🕐 Horario', description: 'Consulta cuándo abrimos' },
+      { id: '4', title: '💬 Hablar con alguien', description: 'Atención humana' },
+    ];
+    if (tenant.fiaoEnabled) {
+      rows.push({ id: '5', title: '📓 Mi Fiao', description: 'Consultar balance' });
+    }
 
-    await message.reply(
-      `*${tenant.name}*\n${greeting}\n\n` +
-      options + `\n\n${footer}`
+    await message.sendList(
+      greeting,
+      'Ver Opciones',
+      [{ title: 'Menú Principal', rows }],
+      tenant.name
     );
+
     return { nextState: 'MAIN_MENU', context: { isEnglish } };
   }
 

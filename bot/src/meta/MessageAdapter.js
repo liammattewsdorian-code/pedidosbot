@@ -1,4 +1,4 @@
-import { sendTextMessage, getMediaUrl } from './client.js';
+import { sendTextMessage, getMediaUrl, sendInteractiveMessage } from './client.js';
 
 /**
  * Adapta el payload de Meta Cloud API a la interfaz que usan
@@ -30,6 +30,41 @@ export class MetaMessage {
 
   async reply(text) {
     await sendTextMessage(this._phoneNumberId, this._accessToken, this.from, text);
+  }
+
+  async sendButtons(text, buttons, title = null) {
+    const payload = {
+      type: 'button',
+      body: { text },
+      action: {
+        buttons: buttons.map(b => ({
+          type: 'reply',
+          reply: { id: b.id, title: b.title }
+        }))
+      }
+    };
+    if (title) payload.header = { type: 'text', text: title };
+    await sendInteractiveMessage(this._phoneNumberId, this._accessToken, this.from, payload);
+  }
+
+  async sendList(text, buttonText, sections, title = null) {
+    const payload = {
+      type: 'list',
+      body: { text },
+      action: {
+        button: buttonText,
+        sections: sections.map(s => ({
+          title: s.title,
+          rows: s.rows.map(r => ({
+            id: r.id,
+            title: r.title,
+            description: r.description || ''
+          }))
+        }))
+      }
+    };
+    if (title) payload.header = { type: 'text', text: title };
+    await sendInteractiveMessage(this._phoneNumberId, this._accessToken, this.from, payload);
   }
 
   async downloadMedia() {

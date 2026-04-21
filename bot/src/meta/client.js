@@ -27,6 +27,32 @@ export async function sendTextMessage(phoneNumberId, accessToken, to, text) {
 }
 
 /**
+ * Envía un mensaje interactivo (botones o lista) via Meta Cloud API.
+ */
+export async function sendInteractiveMessage(phoneNumberId, accessToken, to, interactivePayload) {
+  const res = await fetch(`${GRAPH}/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive: interactivePayload,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Meta API error (${res.status}): ${err}`);
+  }
+  return res.json();
+}
+
+/**
  * Obtiene la URL de un archivo multimedia (imagen, audio, etc.) desde Meta.
  */
 export async function getMediaUrl(accessToken, mediaId) {

@@ -81,9 +81,12 @@ async function processIncoming(phoneNumberId, wabaId, msg) {
   // Extraer ID de media si existe (audio, imagen, etc.)
   const mediaId = msg.audio?.id || msg.voice?.id || msg.image?.id || msg.document?.id || msg.video?.id;
 
+  // Extraer texto o ID de interacción
+  const bodyText = msg.interactive?.button_reply?.id || msg.interactive?.list_reply?.id || msg.text?.body || msg.caption || '';
+
   const message = new MetaMessage({
     from:          msg.from,
-    body:          msg.text?.body || msg.caption || '',
+    body:          bodyText,
     type:          msg.type,
     phoneNumberId: sendingPhoneNumberId,
     accessToken:   metaAccessToken,

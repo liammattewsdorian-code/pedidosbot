@@ -89,9 +89,12 @@ async function showOrderSummary({ tenant, message, context }) {
   if (context.deliveryAddress) lines.push(`📍 ${isEnglish ? "Address" : "Dirección"}: ${context.deliveryAddress}`);
   lines.push(`💳 ${paymentLabel(context.paymentMethod, isEnglish)}`);
   lines.push('');
-  lines.push(isEnglish ? "¿Confirm order? Reply *yes* or *no*." : "¿Confirmas el pedido? Responde *sí* o *no*.");
 
-  await message.reply(lines.join('\n'));
+  const buttons = isEnglish 
+    ? [{ id: 'yes', title: '✅ Yes, Confirm' }, { id: 'no', title: '❌ No, Cancel' }]
+    : [{ id: 'sí', title: '✅ Sí, Confirmar' }, { id: 'no', title: '❌ No, Cancelar' }];
+
+  await message.sendButtons(lines.join('\n'), buttons);
 }
 
 async function createOrder({ tenant, customer, context }) {
