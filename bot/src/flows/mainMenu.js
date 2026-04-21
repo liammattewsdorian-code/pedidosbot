@@ -171,5 +171,5 @@ function formatHours(tenant) {
 function looksLikeOrder(text) {
   // Heurística simple: contiene número o palabras típicas de pedido
   return /\d/.test(text) ||
-    /quiero|dame|mándame|mandame|pedido|ordenar|llevar/i.test(text);
+    /quiero|dame|mándame|mandame|pedido|ordenar|llevar|necesito|vendes|lista|comprar/i.test(text);
 }
