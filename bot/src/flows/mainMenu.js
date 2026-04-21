@@ -156,9 +156,8 @@ function formatCatalog(tenant, categories) {
     if (!cat.products.length) continue;
     lines.push(`*${cat.emoji || ''} ${cat.name.toUpperCase()}*`);
     for (const p of cat.products) {
-      const price = Number(p.price).toLocaleString('es-DO', {
-        style: 'currency', currency: tenant.currency,
-      });
+      const isEnglish = lines[0].includes('Menu'); // Heurística simple si ya se tradujo el título
+      const price = formatMoney(p.price, tenant.currency, isEnglish);
       lines.push(`• ${p.name} — ${price}`);
       if (p.description) lines.push(`  _${p.description}_`);
     }
@@ -167,8 +166,15 @@ function formatCatalog(tenant, categories) {
   return lines.join('\n');
 }
 
-function formatMoney(amount, currency = 'DOP') {
-  return Number(amount).toLocaleString('es-DO', { style: 'currency', currency });
+function formatMoney(amount, currency = 'DOP', isEnglish = false) {
+  const formatted = Number(amount).toLocaleString('es-DO', { style: 'currency', currency });
+  if (isEnglish && currency === 'DOP') {
+    // Tasa de cambio estimada (puedes luego moverla a la DB)
+    const usdAmount = Number(amount) / 60;
+    const usd = usdAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return `${formatted} (approx. ${usd})`;
+  }
+  return formatted;
 }
 
 function formatLocation(tenant) {
