@@ -1,6 +1,8 @@
 import { prisma } from '../lib/prisma.js';
+import { formatMoney } from '../lib/utils.js';
 
 export async function addressFlow({ tenant, customer, conversation, message }) {
+  const isEnglish = conversation.context?.isEnglish;
   let address = (message.body || '').trim();
 
   // Soporte para ubicación GPS (Pin de WhatsApp)
@@ -10,8 +12,11 @@ export async function addressFlow({ tenant, customer, conversation, message }) {
   }
 
   if (address.length < 10 && message.type !== 'location') {
+    const errorMsg = isEnglish 
+      ? "The address seems too short. Please provide a full address with landmarks."
+      : "La dirección parece muy corta. Por favor escríbela completa con referencias.";
     await message.reply(
-      `La dirección parece muy corta. Por favor escríbela completa con referencias.`
+      errorMsg
     );
     return { nextState: 'ASKING_ADDRESS' };
   }
@@ -28,10 +33,14 @@ export async function addressFlow({ tenant, customer, conversation, message }) {
 
   if (zones.length > 1) {
     const list = zones
-      .map((z, i) => `*${i + 1}.* ${z.name} — ${formatMoney(z.fee, tenant.currency)}`)
+      .map((z, i) => `*${i + 1}.* ${z.name} — ${formatMoney(z.fee, tenant.currency, isEnglish)}`)
       .join('\n');
+    
+    const question = isEnglish ? "¿In which area are you?" : "¿En qué zona estás?";
+    const footer = isEnglish ? "_Reply with the number._" : "_Responde con el número._";
+
     await message.reply(
-      `¿En qué zona estás?\n\n${list}\n\n_Responde con el número._`
+      `${question}\n\n${list}\n\n${footer}`
     );
     return { nextState: 'ASKING_ZONE', context };
   }
@@ -46,17 +55,19 @@ export async function addressFlow({ tenant, customer, conversation, message }) {
 
 export async function zoneFlow({ tenant, conversation, message }) {
   const text = (message.body || "").trim();
+  const isEnglish = conversation.context?.isEnglish;
   const selectedIndex = Number.parseInt(text, 10) - 1;
   const zones = tenant.deliveryZones || [];
   const zone = zones[selectedIndex];
 
   if (!zone) {
     const list = zones
-      .map((item, index) => `*${index + 1}.* ${item.name} - ${formatMoney(item.fee, tenant.currency)}`)
+      .map((item, index) => `*${index + 1}.* ${item.name} - ${formatMoney(item.fee, tenant.currency, isEnglish)}`)
       .join("\n");
 
+    const errorMsg = isEnglish ? "Please reply with the number of your area." : "Responde con el numero de tu zona.";
     await message.reply(
-      `Responde con el numero de tu zona.\n\n${list}`
+      `${errorMsg}\n\n${list}`
     );
     return { nextState: "ASKING_ZONE", context: conversation.context };
   }
@@ -71,18 +82,21 @@ export async function zoneFlow({ tenant, conversation, message }) {
 }
 
 async function askPaymentMethod({ tenant, message, context }) {
-  const methods = [
+  const isEnglish = context.isEnglish;
+  const methods = isEnglish ? [
+    `*1.* 💵 Cash`,
+    `*2.* 🏦 Transfer`,
+  ] : [
     `*1.* 💵 Efectivo`,
     `*2.* 🏦 Transferencia (Banreservas / Popular / BHD)`,
   ];
-  if (tenant.fiaoEnabled) methods.push(`*3.* 📓 Fiao`);
+  if (tenant.fiaoEnabled) methods.push(isEnglish ? `*3.* 📓 Credit (Fiao)` : `*3.* 📓 Fiao`);
+
+  const question = isEnglish ? "💳 How would you like to *pay*?" : "💳 ¿Cómo vas a *pagar*?";
+  const footer = isEnglish ? "_Reply with the number._" : "_Responde con el número._";
 
   await message.reply(
-    `💳 ¿Cómo vas a *pagar*?\n\n${methods.join('\n')}\n\n_Responde con el número._`
+    `${question}\n\n${methods.join('\n')}\n\n${footer}`
   );
   return { nextState: 'ASKING_PAYMENT', context };
-}
-
-function formatMoney(amount, currency = 'DOP') {
-  return Number(amount).toLocaleString('es-DO', { style: 'currency', currency });
 }
