@@ -69,7 +69,7 @@ export default async function FiaoPage() {
         <form action={createFiaoEntryAction} className="grid gap-3 md:grid-cols-2">
           <select name="customerId" required className="rounded-lg border px-4 py-2">
             <option value="">Selecciona un cliente</option>
-            {customers.map((customer) => (
+            {customers.map((customer: CustomerWithFiao) => (
               <option key={customer.id} value={customer.id}>
                 {(customer.name || customer.phone) + " - " + customer.phone}
               </option>
