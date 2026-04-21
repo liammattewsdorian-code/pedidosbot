@@ -31,15 +31,16 @@ export default async function FiaoPage() {
   ]);
 
   type CustomerWithFiao = (typeof customers)[number];
-  const customersWithBalance = customers
-    .map((customer: CustomerWithFiao) => ({
+  type CustomerRow = { id: string; name: string; phone: string; balance: number };
+  const customersWithBalance: CustomerRow[] = customers
+    .map((customer: CustomerWithFiao): CustomerRow => ({
       id: customer.id,
       name: customer.name || customer.phone,
       phone: customer.phone,
       balance: Number(customer.fiaoEntries[0]?.balance ?? 0),
     }))
-    .filter((customer) => customer.balance > 0)
-    .sort((a, b) => b.balance - a.balance);
+    .filter((customer: CustomerRow) => customer.balance > 0)
+    .sort((a: CustomerRow, b: CustomerRow) => b.balance - a.balance);
 
   return (
     <main className="max-w-5xl mx-auto px-6 py-8">
