@@ -30,8 +30,9 @@ export default async function FiaoPage() {
     }),
   ]);
 
+  type CustomerWithFiao = (typeof customers)[number];
   const customersWithBalance = customers
-    .map((customer) => ({
+    .map((customer: CustomerWithFiao) => ({
       id: customer.id,
       name: customer.name || customer.phone,
       phone: customer.phone,
