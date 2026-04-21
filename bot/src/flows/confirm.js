@@ -189,6 +189,7 @@ function formatOrderForOwner(tenant, customer, order, context) {
     `💰 ${formatMoney(order.total, tenant.currency)}`,
     `💳 ${paymentLabel(order.paymentMethod)}`,
     context.deliveryAddress ? `📍 *Dirección:* ${context.deliveryAddress}` : '',
+    order.type === 'DELIVERY' && !context.deliveryAddress ? '🛵 *Entrega a domicilio*' : '',
     mapsUrl ? `🗺️ *Ubicación:* ${mapsUrl}` : '',
     `🔗 *Panel:* ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${order.id}`,
   ].filter(Boolean).join('\n');

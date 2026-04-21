@@ -15,6 +15,8 @@
 | `META_WEBHOOK_VERIFY_TOKEN` | Token para validar el webhook de Meta |
 | `BOT_API_SECRET` | Secreto para comunicación Bot <-> Web |
 | `AUTH_SECRET` | Requerido por NextAuth para la seguridad de la sesión |
+| `NEXT_PUBLIC_APP_URL` | URL de producción (https://rapidoycriollo.com) |
+| `BOT_API_URL` | URL del servicio del bot en producción |
 | `CLIENT_KEY` | Llave de cliente para integraciones externas (Solo Prod/Preview) |
 
 ## 2. Instalar dependencias
