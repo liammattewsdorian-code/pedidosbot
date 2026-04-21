@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pedidosbot-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "C:/Users/User/Downloads/Proyectos/pedidosbot/web", "--", "-p", "3005"],
+      "port": 3005
+    }
+  ]
+}

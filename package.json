@@ -1,0 +1,16 @@
+{
+  "name": "pedidosbot-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix bot\" \"npm run dev --prefix web\"",
+    "install-all": "npm install --prefix bot && npm install --prefix web",
+    "prisma:push": "npx prisma db push --schema=prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "openai": "^6.34.0"
+  }
+}

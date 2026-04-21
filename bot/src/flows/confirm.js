@@ -1,0 +1,189 @@
+import { prisma } from '../lib/prisma.js';
+import { orderEvents } from '../api.js';
+
+const PAYMENT_MAP = { '1': 'CASH', '2': 'TRANSFER', '3': 'FIAO' };
+
+export async function confirmFlow({ tenant, customer, conversation, client, message }) {
+  const text = (message.body || '').trim().toLowerCase();
+  const context = conversation.context || {};
+
+  // Paso 1: seleccionar método de pago
+  if (!context.paymentMethod) {
+    const method = PAYMENT_MAP[text];
+    if (!method) {
+      await message.reply(`Por favor responde con el número de la opción (1, 2 o 3).`);
+      return { nextState: 'ASKING_PAYMENT' };
+    }
+    if (method === 'FIAO' && !tenant.fiaoEnabled) {
+      await message.reply(`Esa opción no está disponible.`);
+      return { nextState: 'ASKING_PAYMENT' };
+    }
+
+    const updatedContext = { ...context, paymentMethod: method };
+    await showOrderSummary({ tenant, message, context: updatedContext });
+    return { nextState: 'CONFIRMING', context: updatedContext };
+  }
+
+  // Paso 2: confirmar pedido
+  if (['si', 'sí', 'confirmar', 'ok', 'dale'].includes(text)) {
+    const order = await createOrder({ tenant, customer, context });
+    
+    // Notificar al dashboard en tiempo real
+    orderEvents.emit('newOrder', { tenantId: tenant.id, order });
+
+    await message.reply(
+      `✅ *Pedido #${String(order.orderNumber).padStart(3, '0')} recibido*\n\n` +
+      `Te notificaremos cuando esté listo. ¡Gracias por preferirnos!`
+    );
+
+    // Notificar al dueño
+    if (tenant.ownerPhone) {
+      const ownerMsg = formatOrderForOwner(tenant, customer, order, context);
+      try {
+        await client.sendMessage(`${tenant.ownerPhone}@c.us`, ownerMsg);
+      } catch (err) {
+        // no bloquear el flujo del cliente si falla la notificación
+      }
+    }
+
+    return { nextState: 'MAIN_MENU', context: {} };
+  }
+
+  if (['no', 'cancelar'].includes(text)) {
+    await message.reply(`Pedido cancelado ❌\n\nEscribe *menu* para empezar de nuevo.`);
+    return { nextState: 'MAIN_MENU', context: {} };
+  }
+
+  // Si no entendió, repetir resumen
+  await message.reply(`Responde *sí* para confirmar o *no* para cancelar.`);
+  return { nextState: 'CONFIRMING' };
+}
+
+async function showOrderSummary({ tenant, message, context }) {
+  const items = context.items || [];
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const deliveryFee = context.deliveryFee || 0;
+  const total = subtotal + deliveryFee;
+
+  const lines = [
+    `📋 *Resumen del pedido*`,
+    '',
+    ...items.map((i) => `• ${i.quantity}x ${i.name} — ${money(i.price * i.quantity, tenant.currency)}`),
+    '',
+    `Subtotal: ${money(subtotal, tenant.currency)}`,
+  ];
+  if (deliveryFee) lines.push(`Delivery: ${money(deliveryFee, tenant.currency)}`);
+  lines.push(`*Total: ${money(total, tenant.currency)}*`);
+  lines.push('');
+  if (context.deliveryAddress) lines.push(`📍 ${context.deliveryAddress}`);
+  lines.push(`💳 ${paymentLabel(context.paymentMethod)}`);
+  lines.push('');
+  lines.push(`¿Confirmas el pedido? Responde *sí* o *no*.`);
+
+  await message.reply(lines.join('\n'));
+}
+
+async function createOrder({ tenant, customer, context }) {
+  const items = context.items || [];
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const deliveryFee = context.deliveryFee || 0;
+  const total = subtotal + deliveryFee;
+
+  // Consecutivo por tenant
+  const last = await prisma.order.findFirst({
+    where: { tenantId: tenant.id },
+    orderBy: { orderNumber: 'desc' },
+    select: { orderNumber: true },
+  });
+  const orderNumber = (last?.orderNumber ?? 0) + 1;
+
+  const order = await prisma.order.create({
+    data: {
+      tenantId: tenant.id,
+      customerId: customer.id,
+      orderNumber,
+      status: 'PENDING',
+      type: context.orderType || 'DELIVERY',
+      subtotal,
+      deliveryFee,
+      total,
+      paymentMethod: context.paymentMethod,
+      deliveryAddress: context.deliveryAddress,
+      deliveryZoneId: context.deliveryZoneId,
+      items: {
+        create: items.map((i) => ({
+          productId: i.productId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          subtotal: i.price * i.quantity,
+        })),
+      },
+    },
+    include: {
+      customer: true,
+      items: true,
+    },
+  });
+
+  // Actualizar stats del cliente
+  await prisma.customer.update({
+    where: { id: customer.id },
+    data: {
+      totalOrders: { increment: 1 },
+      totalSpent: { increment: total },
+      lastOrderAt: new Date(),
+    },
+  });
+
+  // Si fiao: crear entrada de deuda
+  if (context.paymentMethod === 'FIAO' && tenant.fiaoEnabled) {
+    const lastEntry = await prisma.fiaoEntry.findFirst({
+      where: { tenantId: tenant.id, customerId: customer.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    const prevBalance = lastEntry ? Number(lastEntry.balance) : 0;
+    await prisma.fiaoEntry.create({
+      data: {
+        tenantId: tenant.id,
+        customerId: customer.id,
+        orderId: order.id,
+        type: 'DEBT',
+        amount: total,
+        balance: prevBalance + total,
+      },
+    });
+  }
+
+  return order;
+}
+
+function formatOrderForOwner(tenant, customer, order, context) {
+  const items = context.items || [];
+  const mapsUrl = context.deliveryAddress 
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(context.deliveryAddress)}`
+    : null;
+
+  return [
+    `🔔 *PEDIDO NUEVO #${String(order.orderNumber).padStart(3, '0')}*`,
+    '',
+    `👤 ${customer.name || customer.phone}`,
+    `📱 ${customer.phone}`,
+    '',
+    ...items.map((i) => `• ${i.quantity}x ${i.name}`),
+    '',
+    `💰 ${money(order.total, tenant.currency)}`,
+    `💳 ${paymentLabel(order.paymentMethod)}`,
+    context.deliveryAddress ? `📍 *Dirección:* ${context.deliveryAddress}` : '',
+    mapsUrl ? `🗺️ *Ubicación:* ${mapsUrl}` : '',
+    `🔗 *Panel:* ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${order.id}`,
+  ].filter(Boolean).join('\n');
+}
+
+function paymentLabel(method) {
+  return { CASH: 'Efectivo', TRANSFER: 'Transferencia', FIAO: 'Fiao', CARD: 'Tarjeta' }[method] || method;
+}
+
+function money(amount, currency = 'DOP') {
+  return Number(amount).toLocaleString('es-DO', { style: 'currency', currency });
+}

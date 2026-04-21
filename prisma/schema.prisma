@@ -1,0 +1,405 @@
+// PedidosBot - Schema multi-tenant
+// Cada tabla tiene tenantId para aislar datos entre negocios
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../web/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// TENANT (Negocio) - un cliente del SaaS
+// ============================================================
+model Tenant {
+  id              String         @id @default(cuid())
+  slug            String         @unique // elarepero, colmadojuan
+  name            String         // "EL AREPERO"
+  businessType    BusinessType   @default(RESTAURANT)
+  plan            Plan           @default(BASICO)
+  status          TenantStatus   @default(ACTIVE)
+
+  // Contacto del negocio
+  whatsappNumber  String         // número del bot (ej: 18296403859)
+  ownerPhone      String?        // celular personal del dueño para notificaciones
+  email           String?
+
+  // Info pública
+  address         String?
+  city            String?
+  googleMapsUrl   String?
+  instagramUrl    String?
+  websiteUrl      String?
+  logoUrl         String?
+
+  // Configuración operativa
+  currency        String         @default("DOP")
+  timezone        String         @default("America/Santo_Domingo")
+  language        Language       @default(ES)
+  deliveryEnabled Boolean        @default(true)
+  fiaoEnabled     Boolean        @default(false)
+
+  // Horario (JSON: { mon: {open: "08:00", close: "22:00"}, ... })
+  schedule        Json?
+
+  // Mensajes personalizados
+  welcomeMessage  String?        @db.Text
+  closedMessage   String?        @db.Text
+
+  // Facturación
+  subscriptionStartedAt DateTime?
+  subscriptionEndsAt    DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  users           User[]
+  categories      Category[]
+  products        Product[]
+  customers       Customer[]
+  orders          Order[]
+  fiaoEntries     FiaoEntry[]
+  deliveryZones   DeliveryZone[]
+  session         WhatsAppSession?
+  conversations   Conversation[]
+
+  @@index([slug])
+  @@index([whatsappNumber])
+}
+
+enum BusinessType {
+  COLMADO
+  RESTAURANT
+  PHARMACY
+  BAKERY
+  OTHER
+}
+
+enum Plan {
+  TRIAL
+  BASICO
+  PRO
+  PREMIUM
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  TRIAL
+}
+
+enum Language {
+  ES
+  EN
+  BOTH
+}
+
+// ============================================================
+// USER (Dueño/Staff del negocio) - acceso al panel web
+// ============================================================
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  phone       String?
+  password    String    // hashed (bcrypt)
+  role        UserRole  @default(OWNER)
+  tenantId    String?
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+enum UserRole {
+  SUPER_ADMIN  // nosotros (el SaaS)
+  OWNER        // dueño del negocio
+  STAFF        // empleado con permisos limitados
+}
+
+// ============================================================
+// CATEGORY & PRODUCT - menú/catálogo del negocio
+// ============================================================
+model Category {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String    // "Arepas", "Bebidas", "Víveres"
+  emoji     String?   // "🥙"
+  order     Int       @default(0)
+  active    Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId])
+}
+
+model Product {
+  id           String    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  name         String    // "Arepa Reina Pepiada"
+  description  String?   @db.Text
+  price        Decimal   @db.Decimal(10, 2)
+  imageUrl     String?
+
+  // Stock / disponibilidad
+  available    Boolean   @default(true)
+  stock        Int?      // null = ilimitado
+  sku          String?
+
+  // Modificadores (ej: "sin cebolla", "extra queso") — JSON
+  modifiers    Json?
+
+  order        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  orderItems   OrderItem[]
+
+  @@index([tenantId, available])
+  @@index([categoryId])
+}
+
+// ============================================================
+// CUSTOMER - clientes finales que piden por WhatsApp
+// ============================================================
+model Customer {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  phone         String    // número de WhatsApp del cliente
+  name          String?
+  address       String?
+  addressNotes  String?   // "casa amarilla frente al colmado"
+
+  // Stats
+  totalOrders   Int       @default(0)
+  totalSpent    Decimal   @default(0) @db.Decimal(10, 2)
+  lastOrderAt   DateTime?
+
+  language      Language  @default(ES)
+  notes         String?   @db.Text  // notas privadas del dueño
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders        Order[]
+  fiaoEntries   FiaoEntry[]
+  conversation  Conversation?
+
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+}
+
+// ============================================================
+// ORDER - pedidos
+// ============================================================
+model Order {
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+
+  orderNumber     Int           // consecutivo por tenant (#001, #002)
+  status          OrderStatus   @default(PENDING)
+  type            OrderType     @default(DELIVERY)
+
+  subtotal        Decimal       @db.Decimal(10, 2)
+  deliveryFee     Decimal       @default(0) @db.Decimal(10, 2)
+  total           Decimal       @db.Decimal(10, 2)
+
+  paymentMethod   PaymentMethod?
+  paymentStatus   PaymentStatus @default(PENDING)
+
+  // Delivery info
+  deliveryAddress String?
+  deliveryNotes   String?
+  deliveryZoneId  String?
+  deliveryZone    DeliveryZone? @relation(fields: [deliveryZoneId], references: [id])
+
+  notes           String?       @db.Text  // notas del cliente
+
+  // Timestamps de cada etapa
+  confirmedAt     DateTime?
+  preparingAt     DateTime?
+  readyAt         DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items           OrderItem[]
+  fiaoEntry       FiaoEntry?
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, status])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+
+  name       String   // snapshot del nombre al momento del pedido
+  price      Decimal  @db.Decimal(10, 2)  // snapshot del precio
+  quantity   Int
+  subtotal   Decimal  @db.Decimal(10, 2)
+
+  modifiers  Json?    // {"sin cebolla": true, "extra queso": 50}
+  notes      String?
+
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  PENDING      // esperando confirmación del dueño
+  CONFIRMED    // dueño confirmó
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+  DINE_IN
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER      // Banreservas, Popular, BHD
+  CARD
+  FIAO          // crédito del colmado
+  MIXED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  REFUNDED
+}
+
+// ============================================================
+// FIAO - créditos del colmado (específico LATAM)
+// ============================================================
+model FiaoEntry {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  orderId     String?       @unique
+  order       Order?        @relation(fields: [orderId], references: [id])
+
+  type        FiaoType
+  amount      Decimal       @db.Decimal(10, 2)
+  balance     Decimal       @db.Decimal(10, 2)  // saldo después de este movimiento
+  notes       String?
+
+  createdAt   DateTime      @default(now())
+
+  @@index([tenantId, customerId])
+}
+
+enum FiaoType {
+  DEBT        // cliente compró fiao (aumenta deuda)
+  PAYMENT     // cliente abonó (disminuye deuda)
+  ADJUSTMENT  // ajuste manual del dueño
+}
+
+// ============================================================
+// DELIVERY ZONES - zonas de entrega con costos diferentes
+// ============================================================
+model DeliveryZone {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String   // "Uvero Alto", "Bávaro Centro"
+  fee         Decimal  @db.Decimal(10, 2)
+  minOrder    Decimal? @db.Decimal(10, 2)
+  estimatedMinutes Int?
+  active      Boolean  @default(true)
+
+  orders      Order[]
+
+  @@index([tenantId])
+}
+
+// ============================================================
+// WHATSAPP SESSION - estado de autenticación del bot por tenant
+// ============================================================
+model WhatsAppSession {
+  id            String         @id @default(cuid())
+  tenantId      String         @unique
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  status        SessionStatus  @default(DISCONNECTED)
+  phoneNumber   String?
+
+  // Meta Cloud API credentials
+  metaPhoneNumberId  String?
+  metaAccessToken    String?   @db.Text
+  metaWabaId         String?
+
+  lastConnectedAt    DateTime?
+  lastDisconnectedAt DateTime?
+  disconnectReason   String?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum SessionStatus {
+  DISCONNECTED
+  QR_PENDING    // QR generado, esperando scan
+  CONNECTING
+  CONNECTED
+  AUTH_FAILED
+}
+
+// ============================================================
+// CONVERSATION - estado de conversación con cada cliente
+// ============================================================
+// Guarda en qué paso del flujo está cada cliente (state machine)
+model Conversation {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId  String   @unique
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // Estado del flujo: MAIN_MENU, ORDERING, ASKING_ADDRESS, CONFIRMING, etc
+  state       String   @default("MAIN_MENU")
+
+  // Contexto del flujo (JSON con datos temporales del pedido en curso)
+  context     Json?
+
+  lastMessageAt DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+}

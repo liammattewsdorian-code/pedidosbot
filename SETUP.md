@@ -1,0 +1,83 @@
+# Setup PedidosBot
+
+## 1. Crear base de datos en Neon
+
+1. Entra a [neon.tech](https://neon.tech) y crea un proyecto nuevo: `pedidosbot`
+2. Copia la `DATABASE_URL` que te da
+3. Duplica `.env.example` a `.env` en la raíz y pega la URL
+
+## 2. Instalar dependencias
+
+```bash
+# Bot service
+cd bot
+npm install
+npx prisma generate --schema=../prisma/schema.prisma
+npx prisma db push --schema=../prisma/schema.prisma
+
+# Panel web
+cd ../web
+npm install
+```
+
+## 3. Arrancar en desarrollo
+
+Terminal 1 (bot):
+```bash
+cd bot
+npm run dev
+```
+
+Terminal 2 (panel):
+```bash
+cd web
+npm run dev
+```
+
+- Panel: http://localhost:3000
+- Bot API: http://localhost:3001/health
+
+## 4. Crear primer tenant (seed manual)
+
+Por ahora sin UI de onboarding — insertar directamente en DB:
+
+```sql
+INSERT INTO "Tenant" (id, slug, name, "businessType", plan, status, "whatsappNumber", "ownerPhone")
+VALUES (
+  'clxxxxx',
+  'elarepero',
+  'EL AREPERO',
+  'RESTAURANT',
+  'BASICO',
+  'ACTIVE',
+  '18296403859',
+  '18296403859'
+);
+```
+
+O usa Prisma Studio: `cd bot && npx prisma studio --schema=../prisma/schema.prisma`
+
+## 5. Escanear QR
+
+1. Abre el panel → *Conectar WhatsApp*
+2. O llama al endpoint: `POST localhost:3001/api/sessions/{tenantId}/start`
+3. Escanea el QR con el WhatsApp del negocio
+4. ¡Listo! El bot empieza a responder mensajes entrantes
+
+## Deploy producción (cuando esté listo)
+
+- **DB**: Neon ya está en prod (mismo cluster que dev o uno nuevo)
+- **Bot service**: Render / Railway / VPS (necesita Chrome)
+- **Web**: Vercel
+- **Sesiones**: volumen persistente para `./sessions/` (no se pueden perder)
+
+## Roadmap inmediato
+
+- [x] Auth completa (NextAuth con credentials)
+- [x] Onboarding: crear tenant desde el panel
+- [x] Dashboard en vivo (SSE)
+- [x] CRUD de productos/categorías
+- [x] Detalle de pedidos y despacho
+- [ ] Integración Stripe para pagos de suscripción
+- [ ] Multi-idioma (ES/EN) en el bot
+- [ ] Voice note transcription (Whisper)
