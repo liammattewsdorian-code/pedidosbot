@@ -4,7 +4,18 @@
 
 1. Entra a [neon.tech](https://neon.tech) y crea un proyecto nuevo: `pedidosbot`
 2. Copia la `DATABASE_URL` que te da
-3. Duplica `.env.example` a `.env` en la raíz y pega la URL
+3. Configura las variables de entorno en el archivo `.env`:
+
+### Variables Requeridas
+
+| Variable | Descripción |
+| :--- | :--- |
+| `DATABASE_URL` | Conexión a Neon PostgreSQL |
+| `OPENAI_API_KEY` | Para Whisper (transcripción de audio) |
+| `META_WEBHOOK_VERIFY_TOKEN` | Token para validar el webhook de Meta |
+| `BOT_API_SECRET` | Secreto para comunicación Bot <-> Web |
+| `AUTH_SECRET` | Requerido por NextAuth para la seguridad de la sesión |
+| `CLIENT_KEY` | Llave de cliente para integraciones externas (Solo Prod/Preview) |
 
 ## 2. Instalar dependencias
 
