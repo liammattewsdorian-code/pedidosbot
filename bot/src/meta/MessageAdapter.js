@@ -1,4 +1,4 @@
-import { sendTextMessage } from './client.js';
+import { sendTextMessage, getMediaUrl } from './client.js';
 
 /**
  * Adapta el payload de Meta Cloud API a la interfaz que usan
@@ -6,12 +6,14 @@ import { sendTextMessage } from './client.js';
  * sin modificar ningún flow handler.
  */
 export class MetaMessage {
-  constructor({ from, body, type, phoneNumberId, accessToken }) {
+  constructor({ from, body, type, phoneNumberId, accessToken, mediaId, location }) {
     this.from = from;          // número sin @c.us
     this.fromMe = false;
     this.body = body || '';
     this.type = type || 'text';
     this.hasMedia = ['audio', 'image', 'video', 'document', 'ptt'].includes(type);
+    this.mediaId = mediaId;
+    this.location = location; // { latitude, longitude, name, address }
 
     this._phoneNumberId = phoneNumberId;
     this._accessToken = accessToken;
@@ -30,9 +32,19 @@ export class MetaMessage {
     await sendTextMessage(this._phoneNumberId, this._accessToken, this.from, text);
   }
 
-  // Audio: por ahora devuelve null (fallback en messageHandler lo maneja)
   async downloadMedia() {
-    return null;
+    if (!this.mediaId) return null;
+    const url = await getMediaUrl(this._accessToken, this.mediaId);
+    if (!url) return null;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${this._accessToken}` },
+    });
+    if (!res.ok) return null;
+
+    const arrayBuffer = await res.arrayBuffer();
+    // Retornamos el formato esperado por messageHandler.js
+    return { data: Buffer.from(arrayBuffer).toString('base64') };
   }
 }
 

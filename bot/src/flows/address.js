@@ -1,9 +1,15 @@
 import { prisma } from '../lib/prisma.js';
 
 export async function addressFlow({ tenant, customer, conversation, message }) {
-  const address = (message.body || '').trim();
+  let address = (message.body || '').trim();
 
-  if (address.length < 10) {
+  // Soporte para ubicación GPS (Pin de WhatsApp)
+  if (message.type === 'location' && message.location) {
+    const { latitude, longitude } = message.location;
+    address = `https://www.google.com/maps?q=${latitude},${longitude}`;
+  }
+
+  if (address.length < 10 && message.type !== 'location') {
     await message.reply(
       `La dirección parece muy corta. Por favor escríbela completa con referencias.`
     );

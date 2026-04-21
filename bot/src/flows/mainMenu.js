@@ -4,11 +4,14 @@ import { formatSchedule } from '../lib/schedule.js';
 /**
  * Menú principal - presenta opciones al cliente.
  */
-export async function mainMenuFlow({ tenant, customer, message }) {
+export async function mainMenuFlow({ tenant, customer, conversation, message }) {
   const text = (message.body || '').trim().toLowerCase();
   
   // Detección simple de idioma para turistas (Punta Cana)
-  const isEnglish = text.includes('hi') || text.includes('hello') || text.includes('order') || (!customer.phone.startsWith('1809') && !customer.phone.startsWith('1829') && !customer.phone.startsWith('1849'));
+  const touristKeywords = ['hi', 'hello', 'order', 'menu', 'delivery', 'price', 'open', 'info', 'address'];
+  // Si no empieza con los códigos de RD, es extranjero
+  const isRDNumber = ['1809', '1829', '1849', '809', '829', '849'].some(prefix => customer.phone.startsWith(prefix));
+  const isEnglish = conversation.context?.isEnglish || (touristKeywords.some(word => text.includes(word)) || !isRDNumber);
 
   // Primera interacción o cliente sin nombre → saludo
   if (!customer.name && !text.match(/^[1-9]$/)) {
@@ -19,12 +22,14 @@ export async function mainMenuFlow({ tenant, customer, message }) {
     const greeting = tenant.welcomeMessage ||
       `¡Hola! 👋 Bienvenido a *${tenant.name}*.\n\n¿En qué te puedo ayudar hoy?`;
 
+    const options = (isEnglish && tenant.plan === 'PREMIUM') ? englishMenuOptions() : mainMenuOptions(tenant);
+    const footer = isEnglish ? `_Reply with the option number or type "menu"._` : `_Responde con el número de la opción o escribe "menu"._`;
+
     await message.reply(
-      `${greeting}\n\n` +
-      mainMenuOptions(tenant) +
-      `\n\n_Responde con el número de la opción o escribe "menu" en cualquier momento._`
+      `*${tenant.name}*\n${greeting}\n\n` +
+      options + `\n\n${footer}`
     );
-    return { nextState: 'MAIN_MENU' };
+    return { nextState: 'MAIN_MENU', context: { isEnglish } };
   }
 
   // Opciones numéricas
@@ -42,10 +47,13 @@ export async function mainMenuFlow({ tenant, customer, message }) {
         orderBy: { order: 'asc' },
       });
       await message.reply(formatCatalog(tenant, categories));
-      await message.reply(
-        `Para *hacer un pedido*, escribe los productos que quieres. Ejemplo:\n\n_"2 arepas reina pepiada y 1 jugo de chinola"_`
-      );
-      return { nextState: 'ORDERING', context: { items: [] } };
+      
+      const instruction = isEnglish && tenant.plan === 'PREMIUM'
+        ? `To *place an order*, just type what you want. Example:\n\n_"2 burgers and 1 orange juice"_`
+        : `Para *hacer un pedido*, escribe los productos que quieres. Ejemplo:\n\n_"2 arepas reina pepiada y 1 jugo de chinola"_`;
+      
+      await message.reply(instruction);
+      return { nextState: 'ORDERING', context: { ...conversation.context, isEnglish, items: [] } };
     }
     case '2':
       await message.reply(formatLocation(tenant));
@@ -98,25 +106,32 @@ export async function mainMenuFlow({ tenant, customer, message }) {
       }
 
       if (looksLikeOrder(text)) {
-        return { nextState: 'ORDERING', context: { items: [], rawInput: text } };
+        return { nextState: 'ORDERING', context: { ...conversation.context, isEnglish, items: [], rawInput: text } };
       }
+
+      const errorMsg = isEnglish ? "I didn't quite get that 🤔" : "No entendí tu mensaje 🤔";
+      const options = (isEnglish && tenant.plan === 'PREMIUM') ? englishMenuOptions() : mainMenuOptions(tenant);
+      
       await message.reply(
-        `No entendí tu mensaje 🤔\n\n${mainMenuOptions(tenant)}`
+        `${errorMsg}\n\n${options}`
       );
       return { nextState: 'MAIN_MENU' };
   }
 }
 
 async function sendEnglishGreeting({ tenant, message }) {
-  const greeting = `Hi! 👋 Welcome to *${tenant.name}*.\n\nHow can I help you today?`;
-  const options = [
+  const greeting = `Hi! 👋 Welcome to *${tenant.name}*.\n\nWe provide delivery service in Punta Cana area. How can we help you today?`;
+  await message.reply(`*${tenant.name}*\n${greeting}\n\n${englishMenuOptions()}\n\n_Reply with the option number or type "menu"._`);
+  return { nextState: 'MAIN_MENU' };
+}
+
+function englishMenuOptions() {
+  return [
     `*1.* 🛒 View Menu / Order`,
     `*2.* 📍 Location`,
     `*3.* 🕐 Hours`,
     `*4.* 💬 Speak to a person`,
   ].join('\n');
-  await message.reply(`${greeting}\n\n${options}\n\n_Reply with the option number._`);
-  return { nextState: 'MAIN_MENU' };
 }
 
 function mainMenuOptions(tenant) {

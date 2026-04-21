@@ -78,12 +78,17 @@ async function processIncoming(phoneNumberId, wabaId, msg) {
   const { tenantId, metaAccessToken, metaPhoneNumberId } = session;
   const sendingPhoneNumberId = metaPhoneNumberId || phoneNumberId;
 
+  // Extraer ID de media si existe (audio, imagen, etc.)
+  const mediaId = msg.audio?.id || msg.voice?.id || msg.image?.id || msg.document?.id || msg.video?.id;
+
   const message = new MetaMessage({
     from:          msg.from,
     body:          msg.text?.body || msg.caption || '',
     type:          msg.type,
     phoneNumberId: sendingPhoneNumberId,
     accessToken:   metaAccessToken,
+    mediaId:       mediaId,
+    location:      msg.location,
   });
 
   const fakeClient = buildFakeClient(sendingPhoneNumberId, metaAccessToken);

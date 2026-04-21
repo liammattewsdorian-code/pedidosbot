@@ -27,6 +27,18 @@ export async function sendTextMessage(phoneNumberId, accessToken, to, text) {
 }
 
 /**
+ * Obtiene la URL de un archivo multimedia (imagen, audio, etc.) desde Meta.
+ */
+export async function getMediaUrl(accessToken, mediaId) {
+  const res = await fetch(`${GRAPH}/${mediaId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.url;
+}
+
+/**
  * Verifica que las credenciales sean válidas consultando el número de teléfono.
  */
 export async function verifyCredentials(phoneNumberId, accessToken) {
