@@ -96,7 +96,7 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
       });
       const balance = lastEntry ? Number(lastEntry.balance) : 0;
       if (balance > 0) {
-        await message.reply(`📓 Tu balance actual es: *${formatMoney(balance, tenant.currency)}*.\n\nRecuerda pasar por el negocio para abonar.`);
+        await message.reply(`📓 Tu balance actual es: *${formatMoney(balance, tenant.currency, isEnglish)}*.\n\nRecuerda pasar por el negocio para abonar.`);
       } else {
         await message.reply(`✅ No tienes deudas pendientes. ¡Estás al día!`);
       }
@@ -131,17 +131,22 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
 
 async function sendEnglishGreeting({ tenant, message }) {
   const greeting = `Hi! 👋 Welcome to *${tenant.name}*.\n\nWe provide delivery service in Punta Cana area. How can we help you today?`;
-  await message.reply(`*${tenant.name}*\n${greeting}\n\n${englishMenuOptions()}\n\n_Reply with the option number or type "menu"._`);
-  return { nextState: 'MAIN_MENU' };
-}
+  
+  const rows = [
+    { id: '1', title: '🛒 View Menu / Order', description: 'See our products and buy' },
+    { id: '2', title: '📍 Location', description: 'Where we are' },
+    { id: '3', title: '🕐 Hours', description: 'Opening times' },
+    { id: '4', title: '💬 Speak to a person', description: 'Talk to our staff' },
+  ];
 
-function englishMenuOptions() {
-  return [
-    `*1.* 🛒 View Menu / Order`,
-    `*2.* 📍 Location`,
-    `*3.* 🕐 Hours`,
-    `*4.* 💬 Speak to a person`,
-  ].join('\n');
+  await message.sendList(
+    greeting,
+    'View Options',
+    [{ title: 'Main Menu', rows }],
+    tenant.name
+  );
+
+  return { nextState: 'MAIN_MENU' };
 }
 
 function mainMenuOptions(tenant) {
@@ -174,18 +179,6 @@ function formatCatalog(tenant, categories) {
     lines.push('');
   }
   return lines.join('\n');
-}
-
-function formatMoney(amount, currency = 'DOP', isEnglish = false) {
-  const formatted = Number(amount).toLocaleString('es-DO', { style: 'currency', currency });
-  if (isEnglish && currency === 'DOP') {
-    // Tasa de cambio estimada (puedes luego moverla a la DB)
-    const rate = 60; 
-    const usdAmount = Number(amount) / rate;
-    const usd = usdAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-    return `${formatted} (≈ ${usd})`;
-  }
-  return formatted;
 }
 
 function formatLocation(tenant) {

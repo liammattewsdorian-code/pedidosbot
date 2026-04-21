@@ -186,7 +186,7 @@ function formatOrderForOwner(tenant, customer, order, context) {
     '',
     ...items.map((i) => `• ${i.quantity}x ${i.name}`),
     '',
-    `💰 ${money(order.total, tenant.currency)}`,
+    `💰 ${formatMoney(order.total, tenant.currency)}`,
     `💳 ${paymentLabel(order.paymentMethod)}`,
     context.deliveryAddress ? `📍 *Dirección:* ${context.deliveryAddress}` : '',
     mapsUrl ? `🗺️ *Ubicación:* ${mapsUrl}` : '',

@@ -16,7 +16,7 @@ export async function orderingFlow({ tenant, customer, conversation, message }) 
     return showCart({ conversation, message, tenant });
   }
   if (lower === 'vaciar' || lower === 'borrar') {
-    return { nextState: 'ORDERING', context: { items: [] } };
+    return { nextState: 'ORDERING', context: { ...conversation.context, items: [] } };
   }
 
   // Parsear productos del texto
@@ -52,11 +52,16 @@ export async function orderingFlow({ tenant, customer, conversation, message }) 
     .map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency)}`)
     .join('\n');
 
-  await message.reply(
-    `✅ Agregado al carrito:\n\n${summary}\n\n` +
-    `*Subtotal:* ${formatMoney(total, tenant.currency)}\n\n` +
-    `_Escribe más productos o *listo* para continuar._`
-  );
+  const msg = `✅ Agregado al carrito:\n\n${summary}\n\n*Subtotal:* ${formatMoney(total, tenant.currency)}`;
+  const isEnglish = conversation.context?.isEnglish;
+
+  const buttons = [
+    { id: 'listo', title: isEnglish ? '✅ Checkout' : '✅ Finalizar' },
+    { id: 'ver', title: isEnglish ? '🛒 View Cart' : '🛒 Ver Carrito' },
+    { id: 'menu', title: isEnglish ? '📋 Menu' : '📋 Ver Menú' }
+  ];
+
+  await message.sendButtons(msg, buttons);
 
   return { nextState: 'ORDERING', context: { ...conversation.context, items: newItems } };
 }

@@ -32,16 +32,19 @@ export async function addressFlow({ tenant, customer, conversation, message }) {
   const context = { ...conversation.context, deliveryAddress: address };
 
   if (zones.length > 1) {
-    const list = zones
-      .map((z, i) => `*${i + 1}.* ${z.name} — ${formatMoney(z.fee, tenant.currency, isEnglish)}`)
-      .join('\n');
-    
-    const question = isEnglish ? "¿In which area are you?" : "¿En qué zona estás?";
-    const footer = isEnglish ? "_Reply with the number._" : "_Responde con el número._";
+    const rows = zones.map((z, i) => ({
+      id: String(i + 1),
+      title: z.name,
+      description: formatMoney(z.fee, tenant.currency, isEnglish)
+    }));
 
-    await message.reply(
-      `${question}\n\n${list}\n\n${footer}`
+    await message.sendList(
+      isEnglish ? "Please select your delivery area" : "Por favor selecciona tu zona de entrega",
+      isEnglish ? "See Areas" : "Ver Zonas",
+      [{ title: isEnglish ? "Delivery Zones" : "Zonas de Delivery", rows }],
+      tenant.name
     );
+
     return { nextState: 'ASKING_ZONE', context };
   }
 
@@ -83,20 +86,18 @@ export async function zoneFlow({ tenant, conversation, message }) {
 
 async function askPaymentMethod({ tenant, message, context }) {
   const isEnglish = context.isEnglish;
-  const methods = isEnglish ? [
-    `*1.* 💵 Cash`,
-    `*2.* 🏦 Transfer`,
-  ] : [
-    `*1.* 💵 Efectivo`,
-    `*2.* 🏦 Transferencia (Banreservas / Popular / BHD)`,
+
+  const buttons = [
+    { id: '1', title: isEnglish ? '💵 Cash' : '💵 Efectivo' },
+    { id: '2', title: isEnglish ? '🏦 Transfer' : '🏦 Transferencia' }
   ];
-  if (tenant.fiaoEnabled) methods.push(isEnglish ? `*3.* 📓 Credit (Fiao)` : `*3.* 📓 Fiao`);
 
-  const question = isEnglish ? "💳 How would you like to *pay*?" : "💳 ¿Cómo vas a *pagar*?";
-  const footer = isEnglish ? "_Reply with the number._" : "_Responde con el número._";
+  if (tenant.fiaoEnabled) {
+    buttons.push({ id: '3', title: isEnglish ? '📓 Credit (Fiao)' : '📓 Fiao' });
+  }
 
-  await message.reply(
-    `${question}\n\n${methods.join('\n')}\n\n${footer}`
-  );
+  const question = isEnglish ? "💳 How would you like to pay?" : "💳 ¿Cómo vas a pagar?";
+  await message.sendButtons(question, buttons);
+
   return { nextState: 'ASKING_PAYMENT', context };
 }
