@@ -35,7 +35,7 @@ export async function addressFlow({ tenant, customer, conversation, message }) {
     const rows = zones.map((z, i) => ({
       id: String(i + 1),
       title: z.name,
-      description: formatMoney(z.fee, tenant.currency, isEnglish)
+      description: formatMoney(z.fee, tenant.currency, isEnglish, tenant.exchangeRate)
     }));
 
     await message.sendList(

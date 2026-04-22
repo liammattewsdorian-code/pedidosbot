@@ -54,7 +54,6 @@ export async function orderingFlow({ tenant, customer, conversation, message }) 
     .join('\n');
 
   const msg = `✅ ${isEnglish ? 'Added to cart' : 'Agregado al carrito'}:\n\n${summary}\n\n*Subtotal:* ${formatMoney(total, tenant.currency, isEnglish, tenant.exchangeRate)}`;
-
   const buttons = [
     { id: 'listo', title: isEnglish ? '✅ Checkout' : '✅ Finalizar' },
     { id: 'ver', title: isEnglish ? '🛒 View Cart' : '🛒 Ver Carrito' },

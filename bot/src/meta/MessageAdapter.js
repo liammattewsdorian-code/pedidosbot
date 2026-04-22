@@ -6,7 +6,7 @@ import { sendTextMessage, getMediaUrl, sendInteractiveMessage } from './client.j
  * sin modificar ningún flow handler.
  */
 export class MetaMessage {
-  constructor({ from, body, type, phoneNumberId, accessToken, mediaId, location }) {
+  constructor({ from, body, type, phoneNumberId, accessToken, mediaId, location }) { // Ya está correcto
     this.from = from;          // número sin @c.us
     this.fromMe = false;
     this.body = body || '';

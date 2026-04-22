@@ -62,7 +62,7 @@ export async function handleIncomingMessage(tenantId, client, message) {
   }
 
   // Palabras clave globales que resetean el flujo
-  const text = (message.body || '').trim().toLowerCase();
+  const text = (message.body || '').trim().toLowerCase(); // Ya está en minúsculas
   if (['cancelar', 'salir', 'menu', 'menú', 'inicio', 'cancel', 'exit', 'start'].includes(text)) {
     await prisma.conversation.update({
       where: { customerId: customer.id },

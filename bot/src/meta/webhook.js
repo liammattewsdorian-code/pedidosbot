@@ -86,7 +86,7 @@ async function processIncoming(phoneNumberId, wabaId, msg) {
 
   const message = new MetaMessage({
     from:          msg.from,
-    body:          bodyText,
+    body:          bodyText, // Ya está correcto
     type:          msg.type,
     phoneNumberId: sendingPhoneNumberId,
     accessToken:   metaAccessToken,
