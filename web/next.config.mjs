@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: false },
+  eslint: { ignoreDuringBuilds: false },
 
   async redirects() {
     return [

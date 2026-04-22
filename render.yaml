@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: rapidoycriollo-bot
+    runtime: docker
+    dockerfilePath: bot/Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: BOT_API_SECRET
+        sync: false
+      - key: META_WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BOT_PUBLIC_URL
+        sync: false
+      - key: BOT_PORT
+        value: 3010
+      - key: LOG_LEVEL
+        value: info
+    healthCheckPath: /health

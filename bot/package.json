@@ -17,9 +17,7 @@
     "express": "^4.21.1",
     "openai": "^4.56.0",
     "pino": "^9.5.0",
-    "pino-pretty": "^11.3.0",
-    "qrcode": "^1.5.4",
-    "whatsapp-web.js": "^1.26.0"
+    "pino-pretty": "^11.3.0"
   },
   "devDependencies": {
     "prisma": "^5.22.0"

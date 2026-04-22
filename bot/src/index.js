@@ -24,7 +24,7 @@ async function main() {
 
   app.listen(PORT, () => {
     logger.info(`HTTP server listening on :${PORT}`);
-    logger.info(`Webhook URL: <your-ngrok-url>/webhook`);
+    logger.info(`Webhook URL: ${process.env.BOT_PUBLIC_URL ?? 'http://localhost:' + PORT}/webhook`);
   });
 
   const shutdown = async (signal) => {
