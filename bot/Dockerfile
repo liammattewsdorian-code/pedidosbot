@@ -2,15 +2,20 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar schema de prisma (está un nivel arriba en el repo)
+# Copiar schema de Prisma (en el repo está un nivel arriba)
 COPY prisma ./prisma
 
-# Copiar archivos del bot
+# Copiar archivos del bot e instalar dependencias
 COPY bot/package*.json ./
 RUN npm ci --omit=dev
 
-# Generar Prisma client
-RUN npx prisma generate --schema=./prisma/schema.prisma
+# En Docker todo está en /app — el generator client_bot espera ../bot/node_modules/.prisma/client
+# desde /app/prisma/ eso sería /app/bot/node_modules/.prisma/client
+# Ajustamos el output a ../node_modules/.prisma/client (= /app/node_modules/.prisma/client)
+RUN sed -i \
+    's|../bot/node_modules/.prisma/client|../node_modules/.prisma/client|g' \
+    ./prisma/schema.prisma && \
+    npx prisma generate --schema=./prisma/schema.prisma
 
 # Copiar código fuente
 COPY bot/src ./src
