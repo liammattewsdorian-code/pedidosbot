@@ -1,11 +1,10 @@
 import pino from 'pino';
 
-export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV !== 'production'
-    ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'HH:MM:ss' } }
-    : undefined,
-});
+const level = ['trace','debug','info','warn','error','fatal'].includes(process.env.LOG_LEVEL)
+  ? process.env.LOG_LEVEL
+  : 'info';
+
+export const logger = pino({ level });
 
 export const tenantLogger = (tenantId, tenantSlug) =>
   logger.child({ tenantId, tenant: tenantSlug });
