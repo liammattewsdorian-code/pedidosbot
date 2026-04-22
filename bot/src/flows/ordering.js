@@ -7,6 +7,7 @@ import { formatMoney } from '../lib/utils.js';
 export async function orderingFlow({ tenant, customer, conversation, message }) {
   const text = (message.body || '').trim();
   const lower = text.toLowerCase();
+  const isEnglish = conversation.context?.isEnglish;
 
   // Comandos especiales
   if (['listo', 'ya', 'continuar', 'terminar', 'seguir'].includes(lower)) {
@@ -49,11 +50,10 @@ export async function orderingFlow({ tenant, customer, conversation, message }) 
 
   const total = newItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const summary = newItems
-    .map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency)}`)
+    .map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency, isEnglish, tenant.exchangeRate)}`)
     .join('\n');
 
-  const msg = `✅ Agregado al carrito:\n\n${summary}\n\n*Subtotal:* ${formatMoney(total, tenant.currency)}`;
-  const isEnglish = conversation.context?.isEnglish;
+  const msg = `✅ ${isEnglish ? 'Added to cart' : 'Agregado al carrito'}:\n\n${summary}\n\n*Subtotal:* ${formatMoney(total, tenant.currency, isEnglish, tenant.exchangeRate)}`;
 
   const buttons = [
     { id: 'listo', title: isEnglish ? '✅ Checkout' : '✅ Finalizar' },
@@ -68,18 +68,23 @@ export async function orderingFlow({ tenant, customer, conversation, message }) 
 
 async function showCart({ conversation, message, tenant }) {
   const items = conversation.context?.items || [];
+  const isEnglish = conversation.context?.isEnglish;
+
   if (!items.length) {
-    const isEnglish = conversation.context?.isEnglish;
     await message.reply(isEnglish ? `Your cart is empty 🛒\n\nType the products you want to order.` : `Tu carrito está vacío 🛒\n\nEscribe los productos que quieres pedir.`);
     return { nextState: 'ORDERING', context: conversation.context };
   }
+
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const summary = items
-    .map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency)}`)
+    .map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency, isEnglish, tenant.exchangeRate)}`)
     .join('\n');
+
+  const title = isEnglish ? `🛒 *Your order*` : `🛒 *Tu pedido*`;
+  const footer = isEnglish ? `Type *ready* to continue or keep adding products.` : `Escribe *listo* para continuar o sigue agregando productos.`;
+
   await message.reply(
-    `🛒 *Tu pedido*\n\n${summary}\n\n*Total:* ${formatMoney(total, tenant.currency)}\n\n` +
-    `Escribe *listo* para continuar o sigue agregando productos.`
+    `${title}\n\n${summary}\n\n*Total:* ${formatMoney(total, tenant.currency, isEnglish, tenant.exchangeRate)}\n\n${footer}`
   );
   return { nextState: 'ORDERING' };
 }
