@@ -79,12 +79,12 @@ async function showOrderSummary({ tenant, message, context }) {
   const lines = [
     title,
     '',
-    ...items.map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency, isEnglish)}`),
+    ...items.map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency, isEnglish, tenant.exchangeRate)}`),
     '',
-    `Subtotal: ${formatMoney(subtotal, tenant.currency, isEnglish)}`,
+    `Subtotal: ${formatMoney(subtotal, tenant.currency, isEnglish, tenant.exchangeRate)}`,
   ];
-  if (deliveryFee) lines.push(`Delivery: ${formatMoney(deliveryFee, tenant.currency, isEnglish)}`);
-  lines.push(`*Total: ${formatMoney(total, tenant.currency, isEnglish)}*`);
+  if (deliveryFee) lines.push(`Delivery: ${formatMoney(deliveryFee, tenant.currency, isEnglish, tenant.exchangeRate)}`);
+  lines.push(`*Total: ${formatMoney(total, tenant.currency, isEnglish, tenant.exchangeRate)}*`);
   lines.push('');
   if (context.deliveryAddress) lines.push(`📍 ${isEnglish ? "Address" : "Dirección"}: ${context.deliveryAddress}`);
   lines.push(`💳 ${paymentLabel(context.paymentMethod, isEnglish)}`);
@@ -174,6 +174,7 @@ async function createOrder({ tenant, customer, context }) {
 
 function formatOrderForOwner(tenant, customer, order, context) {
   const items = context.items || [];
+  const isEnglish = context.isEnglish;
   const mapsUrl = context.deliveryAddress 
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(context.deliveryAddress)}`
     : null;
@@ -189,7 +190,7 @@ function formatOrderForOwner(tenant, customer, order, context) {
     `💰 ${formatMoney(order.total, tenant.currency)}`,
     `💳 ${paymentLabel(order.paymentMethod)}`,
     context.deliveryAddress ? `📍 *Dirección:* ${context.deliveryAddress}` : '',
-    order.type === 'DELIVERY' && !context.deliveryAddress ? '🛵 *Entrega a domicilio*' : '',
+    order.type === 'DELIVERY' && !context.deliveryAddress ? (isEnglish ? '🛵 *Delivery*' : '🛵 *Entrega a domicilio*') : '',
     mapsUrl ? `🗺️ *Ubicación:* ${mapsUrl}` : '',
     `🔗 *Panel:* ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${order.id}`,
   ].filter(Boolean).join('\n');

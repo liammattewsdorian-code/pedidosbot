@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { formatSchedule } from '../lib/schedule.js';
+import { formatMoney } from '../lib/utils.js';
 
 /**
  * Menú principal - presenta opciones al cliente.
@@ -96,7 +97,7 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
       });
       const balance = lastEntry ? Number(lastEntry.balance) : 0;
       if (balance > 0) {
-        await message.reply(`📓 Tu balance actual es: *${formatMoney(balance, tenant.currency, isEnglish)}*.\n\nRecuerda pasar por el negocio para abonar.`);
+        await message.reply(`📓 Tu balance actual es: *${formatMoney(balance, tenant.currency, isEnglish, tenant.exchangeRate)}*.\n\nRecuerda pasar por el negocio para abonar.`);
       } else {
         await message.reply(`✅ No tienes deudas pendientes. ¡Estás al día!`);
       }
@@ -172,7 +173,7 @@ function formatCatalog(tenant, categories) {
     lines.push(`*${cat.emoji || ''} ${cat.name.toUpperCase()}*`);
     for (const p of cat.products) {
       const isEnglish = lines[0].includes('Menu'); // Heurística simple si ya se tradujo el título
-      const price = formatMoney(p.price, tenant.currency, isEnglish);
+      const price = formatMoney(p.price, tenant.currency, isEnglish, tenant.exchangeRate);
       lines.push(`• ${p.name} — ${price}`);
       if (p.description) lines.push(`  _${p.description}_`);
     }

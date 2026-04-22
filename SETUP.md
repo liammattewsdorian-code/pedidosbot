@@ -82,7 +82,11 @@ O usa Prisma Studio: `cd bot && npx prisma studio --schema=../prisma/schema.pris
 - **DB**: Neon ya está en prod (mismo cluster que dev o uno nuevo)
 - **Bot service**: Render / Railway / VPS (necesita Chrome)
 - **Web**: Vercel
-- **Sesiones**: volumen persistente para `./sessions/` (no se pueden perder)
+- **Dominio**: Configurado en Namecheap apuntando a Vercel:
+  - A Record: `@` -> `76.76.21.21`
+  - CNAME: `www` -> `cname.vercel-dns.com`
+- **URL Final**: https://rapidoycriollo.com
+- **Sesiones del Bot**: volumen persistente requerido para `./sessions/` (si no usas Meta Cloud API)
 
 ## Roadmap inmediato
 

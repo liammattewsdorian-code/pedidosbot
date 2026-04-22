@@ -69,8 +69,9 @@ export async function orderingFlow({ tenant, customer, conversation, message }) 
 async function showCart({ conversation, message, tenant }) {
   const items = conversation.context?.items || [];
   if (!items.length) {
-    await message.reply(`Tu carrito está vacío 🛒\n\nEscribe los productos que quieres pedir.`);
-    return { nextState: 'ORDERING' };
+    const isEnglish = conversation.context?.isEnglish;
+    await message.reply(isEnglish ? `Your cart is empty 🛒\n\nType the products you want to order.` : `Tu carrito está vacío 🛒\n\nEscribe los productos que quieres pedir.`);
+    return { nextState: 'ORDERING', context: conversation.context };
   }
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const summary = items

@@ -39,6 +39,7 @@ model Tenant {
   currency        String         @default("DOP")
   timezone        String         @default("America/Santo_Domingo")
   language        Language       @default(ES)
+  exchangeRate    Decimal        @default(60.00) @db.Decimal(10, 2) // Tasa de cambio DOP a USD
   deliveryEnabled Boolean        @default(true)
   fiaoEnabled     Boolean        @default(false)
 

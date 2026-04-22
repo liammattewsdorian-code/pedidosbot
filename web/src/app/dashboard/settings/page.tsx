@@ -32,6 +32,7 @@ export default async function SettingsPage() {
       timezone: true,
       currency: true,
       language: true,
+      exchangeRate: true, // Añadimos la tasa de cambio
       deliveryEnabled: true,
       fiaoEnabled: true,
       welcomeMessage: true,
@@ -100,6 +101,10 @@ export default async function SettingsPage() {
                 <option value="America/Lima">Lima (PET)</option>
                 <option value="America/Santiago">Santiago (CLT)</option>
               </select>
+            </Field>
+            <Field label="Tasa de cambio (DOP a USD)">
+              <input name="exchangeRate" defaultValue={tenant.exchangeRate?.toString() || "60.00"} type="number" step="0.01" required className={input} />
+              <p className="mt-1 text-xs text-slate-500">Para mostrar precios en USD a clientes en inglés.</p>
             </Field>
             <Field label="Moneda">
               <select name="currency" defaultValue={tenant.currency} className={input}>
