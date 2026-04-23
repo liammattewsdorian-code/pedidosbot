@@ -6,7 +6,8 @@ export default function Home() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
+          {/* Logo Minimalista "Rapid Bot" */}
+          <div className="bg-brand text-white p-1.5 rounded-lg font-bold text-xl flex items-center gap-1">⚡<span>RB</span></div>
           <span className="font-bold text-xl">PedidosBot</span>
         </div>
         <div className="flex gap-4">
