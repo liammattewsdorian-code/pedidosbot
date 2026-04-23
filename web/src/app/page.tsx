@@ -12,6 +12,7 @@ export default function Home() {
             alt="PedidosBot Logo" 
             width={90} 
             height={90} 
+            priority
             className="rounded-xl shadow-[0_0_25px_rgba(34,197,94,0.25)] hover:shadow-[0_0_35px_rgba(34,197,94,0.45)] transition-shadow duration-500"
           />
         </Link>
