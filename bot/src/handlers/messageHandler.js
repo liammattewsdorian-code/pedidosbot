@@ -62,7 +62,7 @@ export async function handleIncomingMessage(tenantId, client, message) {
   }
 
   // Palabras clave globales que resetean el flujo
-  const text = (message.body || '').trim().toLowerCase(); // Ya está en minúsculasdev
+  const text = (message.body || '').trim().toLowerCase();
   const resetKeywords = ['cancelar', 'salir', 'menu', 'menú', 'inicio', 'cancel', 'exit', 'start'];
   
   if (resetKeywords.includes(text)) {

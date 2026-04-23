@@ -19,7 +19,10 @@ export function createWebhookRouter() {
       logger.info('Meta webhook verified');
       return res.status(200).send(challenge);
     }
-    res.sendStatus(403);
+
+    logger.warn({ mode, token }, 'Webhook verification failed or accessed via browser');
+    res.status(403).send('Forbidden: This endpoint is for Meta Webhook verification. ' + 
+                         'If you are testing, make sure your token matches.');
   });
 
   // POST — Meta envía mensajes entrantes aquí

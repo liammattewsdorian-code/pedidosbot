@@ -116,16 +116,20 @@ async function checkoutCart(conversation, message, tenant) {
  */
 function parseOrderText(text, products) {
   const normalized = text.toLowerCase();
+  const words = normalized.split(/\s+/);
   const results = [];
 
   for (const product of products) {
     const pName = product.name.toLowerCase();
-    if (!normalized.includes(pName)) {
-      // intento con palabras clave (fuzzy básico)
-      const keywords = pName.split(/\s+/).filter((w) => w.length > 3);
-      const matches = keywords.filter((k) => normalized.includes(k)).length;
-      if (matches < Math.min(2, keywords.length)) continue;
-    }
+    const pWords = pName.split(/\s+/).filter(w => w.length > 2);
+    
+    // Coincidencia flexible: si el nombre está o si la mayoría de palabras coinciden
+    const hasFullMatch = normalized.includes(pName);
+    const matchCount = pWords.filter(pw => words.some(w => w.startsWith(pw) || pw.startsWith(w))).length;
+    
+    const isMatch = hasFullMatch || (pWords.length > 0 && matchCount >= Math.ceil(pWords.length * 0.7));
+
+    if (!isMatch) continue;
     
     // extraer cantidad (soporta "2 cervezas", "cerveza x2", "una cerveza")
     const regex = new RegExp(`(?:(\\d+)|(una|uno))\\s*(?:x|de|unidades?|pzs?)?\\s*${escapeRegex(pName)}|${escapeRegex(pName)}\\s*(?:x|qty:?|cant:?)\\s*(\\d+)`, 'i');
