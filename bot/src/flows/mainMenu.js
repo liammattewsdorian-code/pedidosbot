@@ -2,51 +2,34 @@ import { prisma } from '../lib/prisma.js';
 import { formatSchedule } from '../lib/schedule.js';
 import { formatMoney } from '../lib/utils.js';
 
-/**
- * Menú principal - presenta opciones al cliente.
- */
 export async function mainMenuFlow({ tenant, customer, conversation, message }) {
   const text = (message.body || '').trim().toLowerCase();
-  
-  // Detección simple de idioma para turistas (Punta Cana)
-  const touristKeywords = ['hi', 'hello', 'order', 'menu', 'delivery', 'price', 'open', 'info', 'address'];
-  // Si no empieza con los códigos de RD, es extranjero
-  const isRDNumber = ['1809', '1829', '1849', '809', '829', '849'].some(prefix => customer.phone.startsWith(prefix));
-  const isEnglish = conversation.context?.isEnglish || (touristKeywords.some(word => text.includes(word)) || !isRDNumber);
+  const isEnglish = resolveLanguagePreference(tenant, customer.phone, text, conversation.context?.isEnglish);
 
-  // Primera interacción o cliente sin nombre → saludo
   if (!customer.name && !text.match(/^[1-9]$/)) {
-    if (isEnglish && tenant.plan === 'PREMIUM') {
+    if (isEnglish) {
       return sendEnglishGreeting({ tenant, message });
     }
 
-    const greeting = tenant.welcomeMessage ||
-      `¡Hola! 👋 Bienvenido a *${tenant.name}*.\n\n¿En qué te puedo ayudar hoy?`;
+    const greeting =
+      tenant.welcomeMessage || `Hola! Bienvenido a *${tenant.name}*.\n\nEn que te puedo ayudar hoy?`;
 
     const rows = [
-      { id: '1', title: '🛒 Pedir ahora', description: 'Ver menú y ordenar' },
-      { id: '2', title: '📍 Ubicación', description: '¿Dónde estamos?' },
-      { id: '3', title: '🕐 Horario', description: 'Consulta cuándo abrimos' },
-      { id: '4', title: '💬 Hablar con alguien', description: 'Atención humana' },
+      { id: '1', title: 'Pedir ahora', description: 'Ver menu y ordenar' },
+      { id: '2', title: 'Ubicacion', description: 'Donde estamos?' },
+      { id: '3', title: 'Horario', description: 'Consulta cuando abrimos' },
+      { id: '4', title: 'Hablar con alguien', description: 'Atencion humana' },
     ];
     if (tenant.fiaoEnabled) {
-      rows.push({ id: '5', title: '📓 Mi Fiao', description: 'Consultar balance' });
+      rows.push({ id: '5', title: 'Mi Fiao', description: 'Consultar balance' });
     }
 
-    await message.sendList(
-      greeting,
-      'Ver Opciones',
-      [{ title: 'Menú Principal', rows }],
-      tenant.name
-    );
-
+    await message.sendList(greeting, 'Ver opciones', [{ title: 'Menu principal', rows }], tenant.name);
     return { nextState: 'MAIN_MENU', context: { isEnglish } };
   }
 
-  // Opciones numéricas
   switch (text) {
     case '1': {
-      // Ver catálogo / menú
       const categories = await prisma.category.findMany({
         where: { tenantId: tenant.id, active: true },
         include: {
@@ -57,33 +40,36 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
         },
         orderBy: { order: 'asc' },
       });
+
       await message.reply(formatCatalog(tenant, categories, isEnglish));
-      
-      const instruction = isEnglish && tenant.plan === 'PREMIUM'
-        ? `To *place an order*, just type what you want. Example:\n\n_"2 burgers and 1 orange juice"_`
-        : `Para *hacer un pedido*, escribe los productos que quieres. Ejemplo:\n\n_"2 arepas reina pepiada y 1 jugo de chinola"_`;
-      
-      await message.reply(instruction);
+      await message.reply(
+        isEnglish
+          ? `To place an order, just type what you want. Example:\n\n"2 burgers and 1 orange juice"`
+          : `Para hacer un pedido, escribe los productos que quieres. Ejemplo:\n\n"2 arepas reina pepiada y 1 jugo de chinola"`
+      );
+
       return { nextState: 'ORDERING', context: { ...conversation.context, isEnglish, items: [] } };
     }
+
     case '2':
-      await message.reply(formatLocation(tenant));
+      await message.reply(formatLocation(tenant, isEnglish));
       return { nextState: 'MAIN_MENU' };
 
     case '3':
-      await message.reply(formatHours(tenant));
+      await message.reply(formatHours(tenant, isEnglish));
       return { nextState: 'MAIN_MENU' };
 
     case '4':
       await message.reply(
-        `🧑‍💼 Te conecto con una persona del equipo. En un momento alguien te responderá.`
+        isEnglish
+          ? `I will connect you with a team member. Someone will reply shortly.`
+          : `Te conecto con una persona del equipo. En un momento alguien te respondera.`
       );
-      
-      // Notificación básica al dueño por WhatsApp
+
       if (tenant.ownerPhone) {
-        const ownerJid = `${tenant.ownerPhone}@c.us`;
-        await message.client.sendMessage(ownerJid, 
-          `⚠️ *Atención Humana Requerida*\n\nEl cliente wa.me/${customer.phone} solicita hablar con una persona.`
+        await message.client.sendMessage(
+          `${tenant.ownerPhone}@c.us`,
+          `Atencion humana requerida.\n\nEl cliente wa.me/${customer.phone} solicita hablar con una persona.`
         );
       }
 
@@ -96,23 +82,29 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
         orderBy: { createdAt: 'desc' },
       });
       const balance = lastEntry ? Number(lastEntry.balance) : 0;
+
       if (balance > 0) {
-        await message.reply(`📓 Tu balance actual es: *${formatMoney(balance, tenant.currency, isEnglish, tenant.exchangeRate)}*.\n\n${isEnglish ? 'Remember to visit the store to pay.' : 'Recuerda pasar por el negocio para abonar.'}`);
+        await message.reply(
+          isEnglish
+            ? `Your current balance is: *${formatMoney(balance, tenant.currency, true, tenant.exchangeRate)}*.\n\nRemember to visit the store to pay.`
+            : `Tu balance actual es: *${formatMoney(balance, tenant.currency, false, tenant.exchangeRate)}*.\n\nRecuerda pasar por el negocio para abonar.`
+        );
       } else {
-        await message.reply(`✅ No tienes deudas pendientes. ¡Estás al día!`);
+        await message.reply(
+          isEnglish ? `You have no pending balance. You're all set!` : `No tienes deudas pendientes. Estas al dia!`
+        );
       }
       return { nextState: 'MAIN_MENU' };
     }
 
     default:
-      // Texto libre → interpretar como intento de pedido
       if (text.includes('ubicacion') || text.includes('donde estan') || text.includes('direccion')) {
-        await message.reply(formatLocation(tenant));
+        await message.reply(formatLocation(tenant, isEnglish));
         return { nextState: 'MAIN_MENU' };
       }
-      
+
       if (text.includes('horario') || text.includes('abierto')) {
-        await message.reply(formatHours(tenant));
+        await message.reply(formatHours(tenant, isEnglish));
         return { nextState: 'MAIN_MENU' };
       }
 
@@ -120,85 +112,106 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
         return { nextState: 'ORDERING', context: { ...conversation.context, isEnglish, items: [], rawInput: text } };
       }
 
-      const errorMsg = isEnglish ? "I didn't quite get that 🤔" : "No entendí tu mensaje 🤔";
-      const options = (isEnglish && tenant.plan === 'PREMIUM') ? englishMenuOptions() : mainMenuOptions(tenant);
-      
-      await message.reply(
-        `${errorMsg}\n\n${options}`
-      );
+      const errorMsg = isEnglish ? `I didn't quite get that.` : `No entendi tu mensaje.`;
+      const options = isEnglish ? englishMenuOptions(tenant) : mainMenuOptions(tenant);
+      await message.reply(`${errorMsg}\n\n${options}`);
       return { nextState: 'MAIN_MENU' };
   }
 }
 
 async function sendEnglishGreeting({ tenant, message }) {
-  const greeting = `Hi! 👋 Welcome to *${tenant.name}*.\n\nWe provide delivery service in Punta Cana area. How can we help you today?`;
-  
+  const greeting = `Hi! Welcome to *${tenant.name}*.\n\nHow can we help you today?`;
   const rows = [
-    { id: '1', title: '🛒 View Menu / Order', description: 'See our products and buy' },
-    { id: '2', title: '📍 Location', description: 'Where we are' },
-    { id: '3', title: '🕐 Hours', description: 'Opening times' },
-    { id: '4', title: '💬 Speak to a person', description: 'Talk to our staff' },
+    { id: '1', title: 'View menu / order', description: 'See our products and buy' },
+    { id: '2', title: 'Location', description: 'Where we are' },
+    { id: '3', title: 'Hours', description: 'Opening times' },
+    { id: '4', title: 'Speak to a person', description: 'Talk to our staff' },
   ];
+  if (tenant.fiaoEnabled) {
+    rows.push({ id: '5', title: 'My balance', description: 'Check current credit' });
+  }
 
-  await message.sendList(
-    greeting,
-    'View Options',
-    [{ title: 'Main Menu', rows }],
-    tenant.name
-  );
-
-  return { nextState: 'MAIN_MENU' };
+  await message.sendList(greeting, 'View options', [{ title: 'Main menu', rows }], tenant.name);
+  return { nextState: 'MAIN_MENU', context: { isEnglish: true } };
 }
 
 function mainMenuOptions(tenant) {
   const lines = [
-    `*1.* 🛒 Ver menú / hacer pedido`,
-    `*2.* 📍 Ubicación`,
-    `*3.* 🕐 Horario`,
-    `*4.* 💬 Hablar con una persona`,
+    `*1.* Ver menu / hacer pedido`,
+    `*2.* Ubicacion`,
+    `*3.* Horario`,
+    `*4.* Hablar con una persona`,
   ];
   if (tenant.fiaoEnabled) {
-    lines.push(`*5.* 📓 Consultar mi balance (Fiao)`);
+    lines.push(`*5.* Consultar mi balance`);
+  }
+  return lines.join('\n');
+}
+
+function englishMenuOptions(tenant) {
+  const lines = [
+    `*1.* View menu / place an order`,
+    `*2.* Location`,
+    `*3.* Opening hours`,
+    `*4.* Speak to a person`,
+  ];
+  if (tenant.fiaoEnabled) {
+    lines.push(`*5.* Check my balance`);
   }
   return lines.join('\n');
 }
 
 function formatCatalog(tenant, categories, isEnglish = false) {
   if (!categories.length) {
-    return isEnglish ? `_No products available in the catalog yet._` : `_Aún no hay productos cargados en el catálogo._`;
+    return isEnglish ? `_No products available in the catalog yet._` : `_Aun no hay productos cargados en el catalogo._`;
   }
-  const title = isEnglish ? `📋 *${tenant.name} Menu*` : `📋 *Menú de ${tenant.name}*`;
+
+  const title = isEnglish ? `*${tenant.name} Menu*` : `*Menu de ${tenant.name}*`;
   const lines = [title, ''];
 
-  for (const cat of categories) {
-    if (!cat.products.length) continue;
-    lines.push(`*${cat.emoji || ''} ${cat.name.toUpperCase()}*`);
-    for (const p of cat.products) {
-      const price = formatMoney(p.price, tenant.currency, isEnglish, tenant.exchangeRate); // Ya usa tenant.exchangeRate
-      lines.push(`• ${p.name} — ${price}`);
-      if (p.description) lines.push(`  _${p.description}_`);
+  for (const category of categories) {
+    if (!category.products.length) continue;
+    lines.push(`*${category.emoji || ''} ${category.name.toUpperCase()}*`);
+    for (const product of category.products) {
+      const price = formatMoney(product.price, tenant.currency, isEnglish, tenant.exchangeRate);
+      lines.push(`- ${product.name} - ${price}`);
+      if (product.description) lines.push(`  _${product.description}_`);
     }
     lines.push('');
   }
+
   return lines.join('\n');
 }
 
-function formatLocation(tenant) {
-  const lines = [`📍 *${tenant.name}*`];
+function formatLocation(tenant, isEnglish = false) {
+  const lines = [isEnglish ? `*${tenant.name} Location*` : `*${tenant.name}*`];
   if (tenant.address) lines.push(tenant.address);
   if (tenant.city) lines.push(tenant.city);
-  if (tenant.googleMapsUrl) lines.push(`\n🗺️ ${tenant.googleMapsUrl}`);
+  if (tenant.googleMapsUrl) lines.push(`\n${tenant.googleMapsUrl}`);
   return lines.join('\n');
 }
 
-function formatHours(tenant) {
-  return `🕐 *Horario de ${tenant.name}*\n\n${formatSchedule(tenant.schedule)}`;
+function formatHours(tenant, isEnglish = false) {
+  return isEnglish
+    ? `*${tenant.name} Opening Hours*\n\n${formatSchedule(tenant.schedule)}`
+    : `*Horario de ${tenant.name}*\n\n${formatSchedule(tenant.schedule)}`;
 }
 
 function looksLikeOrder(text) {
-  // Heurística mejorada: detecta patrones de cantidad (ej: "2 de...") o palabras clave en ES/EN
-  const orderKeywords = /quiero|dame|mándame|mandame|pedido|ordenar|llevar|necesito|vendes|lista|comprar|order|buy|need|send|want/i;
-  const quantityPattern = /\d+\s*(x|unidades|servicios|de|of)?\s+\w+/i;
-  
+  const orderKeywords = /quiero|dame|mandame|pedido|ordenar|llevar|necesito|comprar|order|buy|need|send|want/i;
+  const quantityPattern = /\d+\s*(x|unidades|de|of)?\s+\w+/i;
   return orderKeywords.test(text) || quantityPattern.test(text);
+}
+
+function resolveLanguagePreference(tenant, phone, text, previousSelection) {
+  if (typeof previousSelection === 'boolean') {
+    return previousSelection;
+  }
+
+  if (tenant.language === 'EN') return true;
+  if (tenant.language === 'ES') return false;
+
+  const touristKeywords = ['hi', 'hello', 'order', 'menu', 'delivery', 'price', 'open', 'info', 'address'];
+  const isRDNumber = ['1809', '1829', '1849', '809', '829', '849'].some((prefix) => phone.startsWith(prefix));
+  return touristKeywords.some((word) => text.includes(word)) || !isRDNumber;
 }

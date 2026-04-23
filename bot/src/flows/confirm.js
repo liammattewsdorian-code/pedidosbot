@@ -9,16 +9,18 @@ export async function confirmFlow({ tenant, customer, conversation, client, mess
   const context = conversation.context || {};
   const isEnglish = context.isEnglish;
 
-  // Paso 1: seleccionar método de pago
   if (!context.paymentMethod) {
     const method = PAYMENT_MAP[text];
     if (!method) {
-      const errorMsg = isEnglish ? "Please reply with the option number (1, 2 or 3)." : "Por favor responde con el número de la opción (1, 2 o 3).";
+      const errorMsg = isEnglish
+        ? 'Please reply with the option number (1, 2 or 3).'
+        : 'Por favor responde con el numero de la opcion (1, 2 o 3).';
       await message.reply(errorMsg);
       return { nextState: 'ASKING_PAYMENT' };
     }
+
     if (method === 'FIAO' && !tenant.fiaoEnabled) {
-      const errorMsg = isEnglish ? "That option is not available." : "Esa opción no está disponible.";
+      const errorMsg = isEnglish ? 'That option is not available.' : 'Esa opcion no esta disponible.';
       await message.reply(errorMsg);
       return { nextState: 'ASKING_PAYMENT' };
     }
@@ -28,28 +30,22 @@ export async function confirmFlow({ tenant, customer, conversation, client, mess
     return { nextState: 'CONFIRMING', context: updatedContext };
   }
 
-  // Paso 2: confirmar pedido
   if (['si', 'sí', 'confirmar', 'ok', 'dale', 'yes', 'confirm'].includes(text)) {
     const order = await createOrder({ tenant, customer, context });
-    
-    // Notificar al dashboard en tiempo real
     orderEvents.emit('newOrder', { tenantId: tenant.id, order });
 
-    const successMsg = isEnglish 
-      ? `✅ *Order #${String(order.orderNumber).padStart(3, '0')} received*\n\nWe'll notify you when it's ready. Thank you!`
-      : `✅ *Pedido #${String(order.orderNumber).padStart(3, '0')} recibido*\n\nTe notificaremos cuando esté listo. ¡Gracias por preferirnos!`;
+    const successMsg = isEnglish
+      ? `*Order #${String(order.orderNumber).padStart(3, '0')} received*\n\nWe'll notify you when it's ready. Thank you!`
+      : `*Pedido #${String(order.orderNumber).padStart(3, '0')} recibido*\n\nTe notificaremos cuando este listo. Gracias por preferirnos!`;
 
-    await message.reply(
-      successMsg
-    );
+    await message.reply(successMsg);
 
-    // Notificar al dueño
     if (tenant.ownerPhone) {
       const ownerMsg = formatOrderForOwner(tenant, customer, order, context);
       try {
         await client.sendMessage(`${tenant.ownerPhone}@c.us`, ownerMsg);
-      } catch (err) {
-        // no bloquear el flujo del cliente si falla la notificación
+      } catch (_err) {
+        // Do not block the customer flow if owner notification fails.
       }
     }
 
@@ -57,53 +53,73 @@ export async function confirmFlow({ tenant, customer, conversation, client, mess
   }
 
   if (['no', 'cancelar', 'cancel'].includes(text)) {
-    const cancelMsg = isEnglish ? "Order canceled ❌\n\nType *menu* to start over." : "Pedido cancelado ❌\n\nEscribe *menu* para empezar de nuevo.";
+    const cancelMsg = isEnglish
+      ? 'Order canceled.\n\nType *menu* to start over.'
+      : 'Pedido cancelado.\n\nEscribe *menu* para empezar de nuevo.';
     await message.reply(cancelMsg);
     return { nextState: 'MAIN_MENU', context: {} };
   }
 
-  // Si no entendió, repetir resumen
-  const repeatMsg = isEnglish ? "Reply *yes* to confirm or *no* to cancel." : "Responde *sí* para confirmar o *no* para cancelar.";
+  const repeatMsg = isEnglish
+    ? 'Reply *yes* to confirm or *no* to cancel.'
+    : 'Responde *si* para confirmar o *no* para cancelar.';
   await message.reply(repeatMsg);
   return { nextState: 'CONFIRMING' };
 }
 
 async function showOrderSummary({ tenant, message, context }) {
   const items = context.items || [];
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryFee = context.deliveryFee || 0;
   const total = subtotal + deliveryFee;
   const isEnglish = context.isEnglish;
 
-  const title = isEnglish ? `📋 *Order Summary*` : `📋 *Resumen del pedido*`;
   const lines = [
-    title,
+    isEnglish ? '*Order Summary*' : '*Resumen del pedido*',
     '',
-    ...items.map((i) => `• ${i.quantity}x ${i.name} — ${formatMoney(i.price * i.quantity, tenant.currency, isEnglish, tenant.exchangeRate)}`),
+    ...items.map(
+      (item) =>
+        `- ${item.quantity}x ${item.name} - ${formatMoney(
+          item.price * item.quantity,
+          tenant.currency,
+          isEnglish,
+          tenant.exchangeRate
+        )}`
+    ),
     '',
     `Subtotal: ${formatMoney(subtotal, tenant.currency, isEnglish, tenant.exchangeRate)}`,
   ];
-  if (deliveryFee) lines.push(`Delivery: ${formatMoney(deliveryFee, tenant.currency, isEnglish, tenant.exchangeRate)}`);
+
+  if (deliveryFee) {
+    lines.push(`Delivery: ${formatMoney(deliveryFee, tenant.currency, isEnglish, tenant.exchangeRate)}`);
+  }
+
   lines.push(`*Total: ${formatMoney(total, tenant.currency, isEnglish, tenant.exchangeRate)}*`);
   lines.push('');
-  if (context.deliveryAddress) lines.push(`📍 ${isEnglish ? "Address" : "Dirección"}: ${context.deliveryAddress}`);
-  lines.push(`💳 ${paymentLabel(context.paymentMethod, isEnglish)}`);
+
+  if (context.deliveryAddress) {
+    lines.push(`${isEnglish ? 'Address' : 'Direccion'}: ${context.deliveryAddress}`);
+  }
+  if (context.estimatedMinutes) {
+    lines.push(`${isEnglish ? 'Estimated time' : 'Tiempo estimado'}: ${context.estimatedMinutes} min`);
+  }
+
+  lines.push(`${isEnglish ? 'Payment' : 'Pago'}: ${paymentLabel(context.paymentMethod, isEnglish)}`);
   lines.push('');
 
-  const buttons = isEnglish 
-    ? [{ id: 'yes', title: '✅ Yes, Confirm' }, { id: 'no', title: '❌ No, Cancel' }]
-    : [{ id: 'sí', title: '✅ Sí, Confirmar' }, { id: 'no', title: '❌ No, Cancelar' }];
+  const buttons = isEnglish
+    ? [{ id: 'yes', title: 'Yes, confirm' }, { id: 'no', title: 'No, cancel' }]
+    : [{ id: 'si', title: 'Si, confirmar' }, { id: 'no', title: 'No, cancelar' }];
 
   await message.sendButtons(lines.join('\n'), buttons);
 }
 
 async function createOrder({ tenant, customer, context }) {
   const items = context.items || [];
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryFee = context.deliveryFee || 0;
   const total = subtotal + deliveryFee;
 
-  // Consecutivo por tenant
   const last = await prisma.order.findFirst({
     where: { tenantId: tenant.id },
     orderBy: { orderNumber: 'desc' },
@@ -125,12 +141,12 @@ async function createOrder({ tenant, customer, context }) {
       deliveryAddress: context.deliveryAddress,
       deliveryZoneId: context.deliveryZoneId,
       items: {
-        create: items.map((i) => ({
-          productId: i.productId,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-          subtotal: i.price * i.quantity,
+        create: items.map((item) => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          subtotal: item.price * item.quantity,
         })),
       },
     },
@@ -140,7 +156,6 @@ async function createOrder({ tenant, customer, context }) {
     },
   });
 
-  // Actualizar stats del cliente
   await prisma.customer.update({
     where: { id: customer.id },
     data: {
@@ -150,7 +165,6 @@ async function createOrder({ tenant, customer, context }) {
     },
   });
 
-  // Si fiao: crear entrada de deuda
   if (context.paymentMethod === 'FIAO' && tenant.fiaoEnabled) {
     const lastEntry = await prisma.fiaoEntry.findFirst({
       where: { tenantId: tenant.id, customerId: customer.id },
@@ -175,29 +189,31 @@ async function createOrder({ tenant, customer, context }) {
 function formatOrderForOwner(tenant, customer, order, context) {
   const items = context.items || [];
   const isEnglish = context.isEnglish;
-  const mapsUrl = context.deliveryAddress 
+  const mapsUrl = context.deliveryAddress
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(context.deliveryAddress)}`
     : null;
 
   return [
-    `🔔 *PEDIDO NUEVO #${String(order.orderNumber).padStart(3, '0')}*`,
+    `PEDIDO NUEVO #${String(order.orderNumber).padStart(3, '0')}`,
     '',
-    `👤 ${customer.name || customer.phone}`,
-    `📱 ${customer.phone}`,
+    `Cliente: ${customer.name || customer.phone}`,
+    `Telefono: ${customer.phone}`,
     '',
-    ...items.map((i) => `• ${i.quantity}x ${i.name}`),
+    ...items.map((item) => `- ${item.quantity}x ${item.name}`),
     '',
-    `💰 ${formatMoney(order.total, tenant.currency, isEnglish, tenant.exchangeRate)}`,
-    `� ${paymentLabel(order.paymentMethod)}`,
-    context.deliveryAddress ? `📍 *Dirección:* ${context.deliveryAddress}` : '',
-    order.type === 'DELIVERY' && !context.deliveryAddress ? (isEnglish ? '🛵 *Delivery*' : '🛵 *Entrega a domicilio*') : '', // Ya es bilingüe
-    mapsUrl ? `🗺️ *Ubicación:* ${mapsUrl}` : '',
-    `🔗 *Panel:* ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${order.id}`,
-  ].filter(Boolean).join('\n');
+    `Total: ${formatMoney(order.total, tenant.currency, isEnglish, tenant.exchangeRate)}`,
+    `Pago: ${paymentLabel(order.paymentMethod)}`,
+    context.deliveryAddress ? `Direccion: ${context.deliveryAddress}` : '',
+    context.estimatedMinutes ? `ETA: ${context.estimatedMinutes} min` : '',
+    mapsUrl ? `Mapa: ${mapsUrl}` : '',
+    `Panel: ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${order.id}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function paymentLabel(method, isEnglish = false) {
-  const labels = isEnglish 
+  const labels = isEnglish
     ? { CASH: 'Cash', TRANSFER: 'Transfer', FIAO: 'Credit (Fiao)', CARD: 'Card' }
     : { CASH: 'Efectivo', TRANSFER: 'Transferencia', FIAO: 'Fiao', CARD: 'Tarjeta' };
   return labels[method] || method;

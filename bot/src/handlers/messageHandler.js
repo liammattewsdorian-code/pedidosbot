@@ -4,12 +4,7 @@ import { routeByState } from '../flows/router.js';
 import { isWithinBusinessHours } from '../lib/schedule.js';
 import { transcribeAudio } from '../lib/openai.js';
 
-/**
- * Entry point para cada mensaje entrante. Carga el tenant, identifica al cliente
- * y lo pasa al router del flujo según su estado de conversación.
- */
 export async function handleIncomingMessage(tenantId, client, message) {
-  // Ignorar mensajes de grupos, status, propios
   if (message.fromMe) return;
   if (message.from.endsWith('@g.us')) return;
   if (message.from === 'status@broadcast') return;
@@ -18,7 +13,7 @@ export async function handleIncomingMessage(tenantId, client, message) {
     where: { id: tenantId },
     include: { deliveryZones: { where: { active: true } } },
   });
-  if (!tenant || (tenant.status !== 'ACTIVE' && tenant.status !== 'TRIAL')) return;
+  if (!tenant || !isTenantOperational(tenant)) return;
 
   const log = tenantLogger(tenant.id, tenant.slug);
   const phone = normalizePhone(message.from);
@@ -40,31 +35,28 @@ export async function handleIncomingMessage(tenantId, client, message) {
     'Incoming message'
   );
 
-  // Soporte para Notas de Voz (Whisper)
   if (message.hasMedia && (message.type === 'ptt' || message.type === 'audio')) {
     try {
       const media = await message.downloadMedia();
       const transcription = await transcribeAudio(media.data);
       if (transcription) {
-        message.body = transcription; // El bot ahora "lee" lo que el cliente dijo
-        log.info({ transcription }, 'Audio transcripto con éxito');
+        message.body = transcription;
+        log.info({ transcription }, 'Audio transcribed successfully');
       }
     } catch (err) {
-      log.error({ err }, 'Error al transcribir nota de voz');
+      log.error({ err }, 'Error transcribing voice note');
     }
   }
 
-  // Fuera de horario: responder mensaje automático (opcional)
   const withinHours = isWithinBusinessHours(tenant.schedule, tenant.timezone);
   if (!withinHours && tenant.closedMessage) {
     await message.reply(tenant.closedMessage);
     return;
   }
 
-  // Palabras clave globales que resetean el flujo
   const text = (message.body || '').trim().toLowerCase();
   const resetKeywords = ['cancelar', 'salir', 'menu', 'menú', 'inicio', 'cancel', 'exit', 'start'];
-  
+
   if (resetKeywords.includes(text)) {
     await prisma.conversation.update({
       where: { customerId: customer.id },
@@ -78,6 +70,17 @@ export async function handleIncomingMessage(tenantId, client, message) {
 }
 
 function normalizePhone(from) {
-  // Extrae solo los dígitos para evitar problemas con @c.us o formatos internacionales
   return from.replace(/\D/g, '');
+}
+
+function isTenantOperational(tenant) {
+  if (tenant.status !== 'ACTIVE' && tenant.status !== 'TRIAL') {
+    return false;
+  }
+
+  if (tenant.status === 'TRIAL' && tenant.subscriptionEndsAt) {
+    return new Date(tenant.subscriptionEndsAt) >= new Date();
+  }
+
+  return true;
 }
