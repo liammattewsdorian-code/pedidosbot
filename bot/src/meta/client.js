@@ -71,6 +71,10 @@ export async function verifyCredentials(phoneNumberId, accessToken) {
   const res = await fetch(`${GRAPH}/${phoneNumberId}?fields=display_phone_number,verified_name`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error('❌ Meta Verification Failed:', JSON.stringify(errData, null, 2));
+    return null;
+  }
   return res.json();
 }
