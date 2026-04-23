@@ -1,15 +1,21 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-green-50 to-white">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2">
-          {/* Logo Minimalista "Rapid Bot" */}
-          <div className="bg-brand text-white p-1.5 rounded-lg font-bold text-xl flex items-center gap-1">⚡<span>RB</span></div>
-          <span className="font-bold text-xl">PedidosBot</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition">
+          <Image 
+            src="/logo-rapidbot.png" 
+            alt="Rapid Bot Logo" 
+            width={40} 
+            height={40} 
+            className="rounded-lg shadow-sm"
+          />
+          <span className="font-bold text-xl tracking-tight text-slate-900">Rapid Bot</span>
+        </Link>
         <div className="flex gap-4">
           <Link href="/login" className="text-slate-700 hover:text-brand font-medium">
             Iniciar sesión
@@ -35,18 +41,24 @@ export default function Home() {
           Bot inteligente que atiende a tus clientes 24/7, toma pedidos, maneja fiao
           y organiza tu delivery. Para colmados, restaurantes y cualquier negocio.
         </p>
-        <div className="flex gap-4 justify-center flex-wrap">
+        <div className="flex gap-4 justify-center flex-wrap items-center">
           <Link
             href="/signup"
             className="bg-brand hover:bg-brand-dark text-white px-8 py-4 rounded-lg font-semibold text-lg transition"
           >
             Probar 14 días gratis
           </Link>
+          <Link
+            href="https://wa.me/18296403859?text=Hola!%20Quiero%20ver%20la%20demo%20de%20RapidBot"
+            className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition flex items-center gap-2 shadow-sm"
+          >
+            <span>📱</span> Ver Demo en Vivo
+          </Link>
           <a
-            href="#precios"
+            href="https://wa.me/18296403859?text=Hola!%20Necesito%20hablar%20con%20un%20asesor%20de%20RapidBot"
             className="bg-white border-2 border-slate-300 hover:border-brand text-slate-700 px-8 py-4 rounded-lg font-semibold text-lg transition"
           >
-            Ver precios
+            Contacto Directo
           </a>
         </div>
       </section>
@@ -103,7 +115,7 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-        PedidosBot · Hecho con 🥥 en Punta Cana, RD
+        Rapid Bot · Hecho con 🥥 en Punta Cana, RD
       </footer>
     </main>
   );
