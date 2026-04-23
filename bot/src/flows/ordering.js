@@ -115,19 +115,30 @@ async function checkoutCart(conversation, message, tenant) {
  * Ej: "2 arepa reina pepiada y 1 jugo" → [{name:"Arepa Reina Pepiada", qty:2}, ...]
  */
 function parseOrderText(text, products) {
-  const normalized = text.toLowerCase();
-  const words = normalized.split(/\s+/);
+  const normalizedInput = text.toLowerCase();
   const results = [];
 
   for (const product of products) {
     const pName = product.name.toLowerCase();
-    const pWords = pName.split(/\s+/).filter(w => w.length > 2);
     
-    // Coincidencia flexible: si el nombre está o si la mayoría de palabras coinciden
-    const hasFullMatch = normalized.includes(pName);
-    const matchCount = pWords.filter(pw => words.some(w => w.startsWith(pw) || pw.startsWith(w))).length;
+    // 1. Coincidencia exacta o contenida
+    let isMatch = normalizedInput.includes(pName);
     
-    const isMatch = hasFullMatch || (pWords.length > 0 && matchCount >= Math.ceil(pWords.length * 0.7));
+    // 2. Si no hay match, intentar lógica de "palabras clave" con tolerancia a errores
+    if (!isMatch) {
+      const inputWords = normalizedInput.split(/\s+/);
+      const productWords = pName.split(/\s+/).filter(w => w.length > 3);
+      
+      // Si el 70% de las palabras del producto están presentes (incluso con errores leves)
+      const matches = productWords.filter(pWord => 
+        inputWords.some(iWord => 
+          iWord.includes(pWord) || 
+          levenshteinDistance(iWord, pWord) <= 1 // Tolera 1 letra de diferencia
+        )
+      ).length;
+
+      isMatch = productWords.length > 0 && matches >= Math.ceil(productWords.length * 0.7);
+    }
 
     if (!isMatch) continue;
     
@@ -145,6 +156,26 @@ function parseOrderText(text, products) {
   }
 
   return results;
+}
+
+/**
+ * Algoritmo simple de Levenshtein para comparar similitud de palabras
+ */
+function levenshteinDistance(a, b) {
+  const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
 }
 
 function escapeRegex(str) {

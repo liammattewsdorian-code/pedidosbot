@@ -37,13 +37,19 @@ export function createWebhookRouter() {
       for (const entry of body.entry || []) {
         const wabaId = entry.id;
         for (const change of entry.changes || []) {
-          if (change.field !== 'messages') continue;
+          const value = change.value;
+          
+          // Ignorar si no hay mensajes (ej: actualizaciones de perfil o estados de entrega)
+          if (change.field !== 'messages' || !value.messages) {
+            continue;
+          }
 
-          const value         = change.value;
           const phoneNumberId = value.metadata?.phone_number_id;
 
-          for (const msg of value.messages || []) {
-            await processIncoming(phoneNumberId, wabaId, msg);
+          for (const msg of value.messages) {
+            // Procesamos en segundo plano para que el loop no bloquee 
+            // y Meta reciba su confirmación de entrega rápido
+            processIncoming(phoneNumberId, wabaId, msg).catch(err => logger.error({ err }, 'Error processing message background'));
           }
         }
       }
