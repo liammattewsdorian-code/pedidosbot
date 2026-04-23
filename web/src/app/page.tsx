@@ -15,6 +15,7 @@ export default function Home() {
             priority
             className="rounded-xl shadow-[0_0_25px_rgba(34,197,94,0.25)] hover:shadow-[0_0_35px_rgba(34,197,94,0.45)] transition-shadow duration-500"
           />
+          <span className="text-2xl font-bold text-slate-900 tracking-tight">PedidosBot</span>
         </Link>
         <div className="flex gap-4">
           <Link href="/login" className="text-slate-700 hover:text-brand font-medium">
