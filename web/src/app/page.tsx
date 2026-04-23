@@ -14,7 +14,6 @@ export default function Home() {
             height={90} 
             className="rounded-xl shadow-md"
           />
-          <span className="font-bold text-2xl tracking-tight text-slate-900"></span>
         </Link>
         <div className="flex gap-4">
           <Link href="/login" className="text-slate-700 hover:text-brand font-medium">
