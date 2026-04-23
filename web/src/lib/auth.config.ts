@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { TenantStatus, UserRole } from "@prisma/client";
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
@@ -8,20 +9,32 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.tenantId = (user as any).tenantId;
-        token.tenantSlug = (user as any).tenantSlug;
-        token.tenantName = (user as any).tenantName;
+        token.id = user.id;
+        token.role = user.role;
+        token.tenantId = user.tenantId;
+        token.tenantSlug = user.tenantSlug;
+        token.tenantName = user.tenantName;
+        token.tenantStatus = user.tenantStatus;
+        token.trialEndsAt = user.trialEndsAt;
       }
       return token;
     },
     async session({ session, token }) {
-      (session.user as any).id = token.id;
-      (session.user as any).role = token.role;
-      (session.user as any).tenantId = token.tenantId;
-      (session.user as any).tenantSlug = token.tenantSlug;
-      (session.user as any).tenantName = token.tenantName;
+      if (!session.user) {
+        return session;
+      }
+
+      session.user.id = typeof token.id === "string" ? token.id : "";
+      session.user.role = typeof token.role === "string" ? (token.role as UserRole) : UserRole.OWNER;
+      session.user.tenantId = typeof token.tenantId === "string" ? token.tenantId : null;
+      session.user.tenantSlug = typeof token.tenantSlug === "string" ? token.tenantSlug : null;
+      session.user.tenantName = typeof token.tenantName === "string" ? token.tenantName : null;
+      session.user.tenantStatus =
+        typeof token.tenantStatus === "string"
+          ? (token.tenantStatus as TenantStatus)
+          : null;
+      session.user.trialEndsAt =
+        typeof token.trialEndsAt === "string" ? token.trialEndsAt : null;
       return session;
     },
   },

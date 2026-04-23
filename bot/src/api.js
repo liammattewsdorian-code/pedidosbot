@@ -6,6 +6,31 @@ import { sendTextMessage, verifyCredentials } from './meta/client.js';
 
 export const orderEvents = new EventEmitter();
 
+async function findSessionByTenantId(tenantId, select) {
+  return prisma.whatsAppSession.findFirst({
+    where: { tenantId },
+    ...(select ? { select } : {}),
+  });
+}
+
+async function saveSessionByTenantId(tenantId, data) {
+  const existing = await prisma.whatsAppSession.findFirst({
+    where: { tenantId },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return prisma.whatsAppSession.update({
+      where: { id: existing.id },
+      data,
+    });
+  }
+
+  return prisma.whatsAppSession.create({
+    data: { tenantId, ...data },
+  });
+}
+
 export function createApiRouter() {
   const router = Router();
 
@@ -33,25 +58,13 @@ export function createApiRouter() {
           .json({ error: 'Credenciales invalidas. Verifica el Phone Number ID y el Access Token.' });
       }
 
-      await prisma.whatsAppSession.upsert({
-        where: { tenantId },
-        create: {
-          tenantId,
-          status: 'CONNECTED',
-          phoneNumber: info.display_phone_number,
-          metaPhoneNumberId: phoneNumberId,
-          metaAccessToken: accessToken,
-          metaWabaId: wabaId || null,
-          lastConnectedAt: new Date(),
-        },
-        update: {
-          status: 'CONNECTED',
-          phoneNumber: info.display_phone_number,
-          metaPhoneNumberId: phoneNumberId,
-          metaAccessToken: accessToken,
-          metaWabaId: wabaId || null,
-          lastConnectedAt: new Date(),
-        },
+      await saveSessionByTenantId(tenantId, {
+        status: 'CONNECTED',
+        phoneNumber: info.display_phone_number,
+        metaPhoneNumberId: phoneNumberId,
+        metaAccessToken: accessToken,
+        metaWabaId: wabaId || null,
+        lastConnectedAt: new Date(),
       });
 
       res.json({
@@ -67,38 +80,29 @@ export function createApiRouter() {
 
   router.post('/sessions/:tenantId/disconnect', async (req, res) => {
     const { tenantId } = req.params;
-    await prisma.whatsAppSession.upsert({
-      where: { tenantId },
-      create: { tenantId, status: 'DISCONNECTED' },
-      update: {
-        status: 'DISCONNECTED',
-        metaPhoneNumberId: null,
-        metaAccessToken: null,
-        metaWabaId: null,
-      },
+    await saveSessionByTenantId(tenantId, {
+      status: 'DISCONNECTED',
+      metaPhoneNumberId: null,
+      metaAccessToken: null,
+      metaWabaId: null,
     });
     res.json({ ok: true });
   });
 
   router.get('/sessions/:tenantId', async (req, res) => {
-    const session = await prisma.whatsAppSession.findUnique({
-      where: { tenantId: req.params.tenantId },
-      select: {
-        status: true,
-        phoneNumber: true,
-        metaPhoneNumberId: true,
-        metaWabaId: true,
-        lastConnectedAt: true,
-      },
+    const session = await findSessionByTenantId(req.params.tenantId, {
+      status: true,
+      phoneNumber: true,
+      metaPhoneNumberId: true,
+      metaWabaId: true,
+      lastConnectedAt: true,
     });
     res.json(session || { status: 'DISCONNECTED' });
   });
 
   router.post('/sessions/:tenantId/send', async (req, res) => {
     const { to, message } = req.body;
-    const session = await prisma.whatsAppSession.findUnique({
-      where: { tenantId: req.params.tenantId },
-    });
+    const session = await findSessionByTenantId(req.params.tenantId);
     if (!session?.metaPhoneNumberId) {
       return res.status(404).json({ error: 'Sesion no configurada' });
     }
@@ -113,11 +117,11 @@ export function createApiRouter() {
 
   router.post('/sessions/:tenantId/orders/:orderId/dispatch', async (req, res) => {
     const { tenantId, orderId } = req.params;
-    const session = await prisma.whatsAppSession.findUnique({ where: { tenantId } });
+    const session = await findSessionByTenantId(tenantId);
     if (!session?.metaPhoneNumberId) return res.status(404).json({ error: 'Sesion no activa' });
 
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, tenantId },
       include: { customer: true },
     });
     if (!order) return res.status(404).json({ error: 'Pedido no encontrado' });
@@ -137,11 +141,11 @@ export function createApiRouter() {
 
   router.post('/sessions/:tenantId/orders/:orderId/mark-seen', async (req, res) => {
     const { tenantId, orderId } = req.params;
-    const session = await prisma.whatsAppSession.findUnique({ where: { tenantId } });
+    const session = await findSessionByTenantId(tenantId);
     if (!session?.metaPhoneNumberId) return res.status(404).json({ error: 'Sesion no activa' });
 
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, tenantId },
       include: { customer: true },
     });
     if (!order) return res.status(404).json({ error: 'Pedido no encontrado' });

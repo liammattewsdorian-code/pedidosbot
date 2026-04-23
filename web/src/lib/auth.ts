@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import type { User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
@@ -25,8 +26,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 id: true, 
                 slug: true, 
                 name: true,
-                planStatus: true,
-                trialEndsAt: true 
+                status: true,
+                subscriptionEndsAt: true 
               } 
             } 
           },
@@ -41,17 +42,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           data: { lastLoginAt: new Date() },
         });
 
-        return {
+        const authUser: User = {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
-          tenantId: user.tenantId,
-          tenantSlug: user.tenant?.slug,
-          tenantName: user.tenant?.name,
-          tenantStatus: user.tenant?.planStatus || 'TRIAL',
-          trialEndsAt: user.tenant?.trialEndsAt,
-        } as any;
+          tenantId: user.tenantId ?? null,
+          tenantSlug: user.tenant?.slug ?? null,
+          tenantName: user.tenant?.name ?? null,
+          tenantStatus: user.tenant?.status ?? null,
+          trialEndsAt: user.tenant?.subscriptionEndsAt?.toISOString() ?? null,
+        };
+
+        return authUser;
       },
     }),
   ],
