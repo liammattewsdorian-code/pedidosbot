@@ -78,7 +78,7 @@ Este bot utiliza la API oficial de Meta para mayor estabilidad. Para conectar un
 2. Agrega el producto **WhatsApp**.
 3. En **WhatsApp > Configuración de la API**, obtén el **Identificador de número de teléfono** (Phone Number ID).
 4. Genera un **Token de acceso** (puedes usar el temporal para pruebas).
-5. En el panel de Rapid Bot, ingresa estos valores en la sección de conexión.
+5. En el panel de PedidosBot, ingresa estos valores en la sección de conexión.
 6. ¡Listo! El bot empezará a responder vía Meta Cloud API.
 
 ## Deploy producción (cuando esté listo)

@@ -57,7 +57,7 @@ export async function mainMenuFlow({ tenant, customer, conversation, message }) 
         },
         orderBy: { order: 'asc' },
       });
-      await message.reply(formatCatalog(tenant, categories));
+      await message.reply(formatCatalog(tenant, categories, isEnglish));
       
       const instruction = isEnglish && tenant.plan === 'PREMIUM'
         ? `To *place an order*, just type what you want. Example:\n\n_"2 burgers and 1 orange juice"_`
@@ -163,16 +163,17 @@ function mainMenuOptions(tenant) {
   return lines.join('\n');
 }
 
-function formatCatalog(tenant, categories) {
+function formatCatalog(tenant, categories, isEnglish = false) {
   if (!categories.length) {
-    return `_Aún no hay productos cargados en el catálogo._`;
+    return isEnglish ? `_No products available in the catalog yet._` : `_Aún no hay productos cargados en el catálogo._`;
   }
-  const lines = [`📋 *Menú de ${tenant.name}*`, ''];
+  const title = isEnglish ? `📋 *${tenant.name} Menu*` : `📋 *Menú de ${tenant.name}*`;
+  const lines = [title, ''];
+
   for (const cat of categories) {
     if (!cat.products.length) continue;
     lines.push(`*${cat.emoji || ''} ${cat.name.toUpperCase()}*`);
     for (const p of cat.products) {
-      const isEnglish = lines[0].includes('Menu'); // Heurística simple si ya se tradujo el título
       const price = formatMoney(p.price, tenant.currency, isEnglish, tenant.exchangeRate); // Ya usa tenant.exchangeRate
       lines.push(`• ${p.name} — ${price}`);
       if (p.description) lines.push(`  _${p.description}_`);
@@ -195,7 +196,9 @@ function formatHours(tenant) {
 }
 
 function looksLikeOrder(text) {
-  // Heurística simple: contiene número o palabras típicas de pedido
-  return /\d/.test(text) ||
-    /quiero|dame|mándame|mandame|pedido|ordenar|llevar|necesito|vendes|lista|comprar/i.test(text);
+  // Heurística mejorada: detecta patrones de cantidad (ej: "2 de...") o palabras clave en ES/EN
+  const orderKeywords = /quiero|dame|mándame|mandame|pedido|ordenar|llevar|necesito|vendes|lista|comprar|order|buy|need|send|want/i;
+  const quantityPattern = /\d+\s*(x|unidades|servicios|de|of)?\s+\w+/i;
+  
+  return orderKeywords.test(text) || quantityPattern.test(text);
 }

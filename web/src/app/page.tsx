@@ -8,8 +8,8 @@ export default function Home() {
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition">
           <Image 
-            src="/logo-rapidbot.png" 
-            alt="Rapid Bot Logo" 
+            src="/logo-pedidosbot.png" 
+            alt="PedidosBot Logo" 
             width={90} 
             height={90} 
             className="rounded-xl shadow-[0_0_25px_rgba(34,197,94,0.25)] hover:shadow-[0_0_35px_rgba(34,197,94,0.45)] transition-shadow duration-500"
@@ -48,13 +48,13 @@ export default function Home() {
             Probar 14 días gratis
           </Link>
           <Link
-            href="https://wa.me/18296403859?text=Hola!%20Quiero%20ver%20la%20demo%20de%20RapidBot"
+            href="https://wa.me/18296403859?text=Hola!%20Quiero%20ver%20la%20demo%20de%20PedidosBot"
             className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition flex items-center gap-2 shadow-sm"
           >
             <span>📱</span> Ver Demo en Vivo
           </Link>
           <a
-            href="https://wa.me/18296403859?text=Hola!%20Necesito%20hablar%20con%20un%20asesor%20de%20RapidBot"
+            href="https://wa.me/18296403859?text=Hola!%20Necesito%20hablar%20con%20un%20asesor%20de%20PedidosBot"
             className="bg-white border-2 border-slate-300 hover:border-brand text-slate-700 px-8 py-4 rounded-lg font-semibold text-lg transition"
           >
             Contacto Directo
@@ -114,7 +114,7 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-        Rapid Bot · Hecho con 🥥 en Punta Cana, RD
+        PedidosBot · Hecho con 🥥 en Punta Cana, RD
       </footer>
     </main>
   );

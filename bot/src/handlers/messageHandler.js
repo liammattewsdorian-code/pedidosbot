@@ -62,8 +62,10 @@ export async function handleIncomingMessage(tenantId, client, message) {
   }
 
   // Palabras clave globales que resetean el flujo
-  const text = (message.body || '').trim().toLowerCase(); // Ya está en minúsculas
-  if (['cancelar', 'salir', 'menu', 'menú', 'inicio', 'cancel', 'exit', 'start'].includes(text)) {
+  const text = (message.body || '').trim().toLowerCase(); // Ya está en minúsculasdev
+  const resetKeywords = ['cancelar', 'salir', 'menu', 'menú', 'inicio', 'cancel', 'exit', 'start'];
+  
+  if (resetKeywords.includes(text)) {
     await prisma.conversation.update({
       where: { customerId: customer.id },
       data: { state: 'MAIN_MENU', context: {} },
@@ -76,6 +78,6 @@ export async function handleIncomingMessage(tenantId, client, message) {
 }
 
 function normalizePhone(from) {
-  // whatsapp-web.js devuelve "18296403859@c.us" → extrae solo el número
-  return from.split('@')[0];
+  // Extrae solo los dígitos para evitar problemas con @c.us o formatos internacionales
+  return from.replace(/\D/g, '');
 }

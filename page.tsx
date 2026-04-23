@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
     <main className="mx-auto max-w-7xl px-6 py-10">
       <header className="mb-10 flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900">Rapid Bot Master Control</h1>
+          <h1 className="text-4xl font-bold text-slate-900">PedidosBot Master Control</h1>
           <p className="text-slate-500 text-lg">Administración global de la plataforma</p>
         </div>
         <Link href="/" className="text-brand font-medium hover:underline">Ir al Inicio</Link>
