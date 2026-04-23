@@ -10,11 +10,11 @@ export default function Home() {
           <Image 
             src="/logo-rapidbot.png" 
             alt="Rapid Bot Logo" 
-            width={40} 
-            height={40} 
-            className="rounded-lg shadow-sm"
+            width={64} 
+            height={64} 
+            className="rounded-xl shadow-md"
           />
-          <span className="font-bold text-xl tracking-tight text-slate-900">Rapid Bot</span>
+          <span className="font-bold text-2xl tracking-tight text-slate-900">Rapid Bot</span>
         </Link>
         <div className="flex gap-4">
           <Link href="/login" className="text-slate-700 hover:text-brand font-medium">
