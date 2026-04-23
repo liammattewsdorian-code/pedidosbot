@@ -10,6 +10,7 @@ export default async function AdminDashboard() {
 
   // Verificación de seguridad: Solo ADMIN puede entrar
   if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || (session.user as any).role !== "SUPER_ADMIN") {
     redirect("/dashboard");
   }
 
