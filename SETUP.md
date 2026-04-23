@@ -70,12 +70,16 @@ VALUES (
 
 O usa Prisma Studio: `cd bot && npx prisma studio --schema=../prisma/schema.prisma`
 
-## 5. Escanear QR
+## 5. Conectar WhatsApp (Meta Cloud API)
 
-1. Abre el panel → *Conectar WhatsApp*
-2. O llama al endpoint: `POST localhost:3001/api/sessions/{tenantId}/start`
-3. Escanea el QR con el WhatsApp del negocio
-4. ¡Listo! El bot empieza a responder mensajes entrantes
+Este bot utiliza la API oficial de Meta para mayor estabilidad. Para conectar un negocio:
+
+1. Crea una App en Meta for Developers (Tipo: Negocios).
+2. Agrega el producto **WhatsApp**.
+3. En **WhatsApp > Configuración de la API**, obtén el **Identificador de número de teléfono** (Phone Number ID).
+4. Genera un **Token de acceso** (puedes usar el temporal para pruebas).
+5. En el panel de Rapid Bot, ingresa estos valores en la sección de conexión.
+6. ¡Listo! El bot empezará a responder vía Meta Cloud API.
 
 ## Deploy producción (cuando esté listo)
 

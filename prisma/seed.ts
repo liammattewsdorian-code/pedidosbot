@@ -22,6 +22,8 @@ async function main() {
       status: 'ACTIVE',
       whatsappNumber: '18296403859',
       ownerPhone: '18296403859',
+      currency: 'DOP',
+      exchangeRate: 60.0,
     },
   });
 
@@ -33,7 +35,7 @@ async function main() {
       email: 'admin@rapidbot.com',
       name: 'Super Admin',
       password: passwordHash,
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
       tenantId: tenant.id,
     },
   });

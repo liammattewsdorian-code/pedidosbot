@@ -7,7 +7,8 @@
     "install-all": "npm install --prefix bot && npm install --prefix web",
     "prisma:push": "npx prisma db push --schema=prisma/schema.prisma",
     "build:web": "npx prisma generate --schema=prisma/schema.prisma && npm run build --prefix web",
-    "db:seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "db:seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+    "db:studio": "npx prisma studio --schema=prisma/schema.prisma"
   },
   "prisma": {
     "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
