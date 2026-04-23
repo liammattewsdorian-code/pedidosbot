@@ -22,14 +22,19 @@ async function main() {
     res.json({ ok: true, mode: 'meta-cloud-api', uptime: process.uptime() });
   });
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info(`HTTP server listening on :${PORT}`);
     logger.info(`Webhook URL: ${process.env.BOT_PUBLIC_URL ?? 'http://localhost:' + PORT}/webhook`);
   });
 
   const shutdown = async (signal) => {
     logger.info({ signal }, 'Shutting down');
-    process.exit(0);
+    server.close(() => {
+      logger.info('HTTP server closed');
+      process.exit(0);
+    });
+    // Forzar salida si el cierre limpio tarda demasiado
+    setTimeout(() => process.exit(1), 5000);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT',  () => shutdown('SIGINT'));
