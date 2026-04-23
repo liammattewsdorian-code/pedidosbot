@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 export default async function Dashboard() {
   const session = await auth();
   const tenantId = (session?.user as any)?.tenantId as string | undefined;
+  const userRole = (session?.user as any)?.role || "STAFF";
+  const isStaff = userRole === "STAFF";
   if (!tenantId) return null;
 
   const todayStart = new Date();
@@ -78,11 +80,12 @@ export default async function Dashboard() {
             Resumen de {tenant?.name || "tu negocio"}
           </h1>
           <p className="text-sm text-slate-500">
-            Controla pedidos, catalogo, delivery y cobranza desde un solo lugar.
+            {isStaff ? "Vista de operador" : "Control total del negocio"}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        {!isStaff && (
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <div className="text-xs uppercase tracking-wide text-slate-400">
             Plan actual
           </div>
@@ -97,7 +100,8 @@ export default async function Dashboard() {
               Conectar WhatsApp
             </Link>
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="mb-8 grid gap-4 md:grid-cols-4">
@@ -163,7 +167,7 @@ export default async function Dashboard() {
 
       <h2 className="mb-3 text-lg font-bold">Secciones</h2>
       <div className="grid gap-4 md:grid-cols-3">
-        {SECTIONS.map((section) => (
+        {SECTIONS.filter(s => !isStaff || !s.adminOnly).map((section) => (
           <Link
             key={section.href}
             href={section.href}
@@ -219,35 +223,41 @@ const SECTIONS = [
     title: "Conectar WhatsApp",
     desc: "Escanea el QR para vincular tu numero",
     href: "/dashboard/whatsapp",
+    adminOnly: true,
   },
   {
     icon: "M",
     title: "Menu / Productos",
     desc: "Edita tu catalogo, precios y categorias",
     href: "/dashboard/menu",
+    adminOnly: false,
   },
   {
     icon: "O",
     title: "Pedidos",
     desc: "Ver, confirmar y gestionar pedidos",
     href: "/dashboard/orders",
+    adminOnly: false,
   },
   {
     icon: "F",
     title: "Fiao",
     desc: "Control de creditos por cliente",
     href: "/dashboard/fiao",
+    adminOnly: false,
   },
   {
     icon: "Z",
     title: "Zonas de delivery",
     desc: "Define zonas y costos de entrega",
     href: "/dashboard/zones",
+    adminOnly: true,
   },
   {
     icon: "C",
     title: "Configuracion",
     desc: "Horario, datos del negocio y mensajes",
     href: "/dashboard/settings",
+    adminOnly: true,
   },
 ];

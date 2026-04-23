@@ -19,7 +19,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email },
-          include: { tenant: { select: { id: true, slug: true, name: true } } },
+          include: { 
+            tenant: { 
+              select: { 
+                id: true, 
+                slug: true, 
+                name: true,
+                planStatus: true,
+                trialEndsAt: true 
+              } 
+            } 
+          },
         });
         if (!user) return null;
 
@@ -39,6 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           tenantId: user.tenantId,
           tenantSlug: user.tenant?.slug,
           tenantName: user.tenant?.name,
+          tenantStatus: user.tenant?.planStatus || 'TRIAL',
+          trialEndsAt: user.tenant?.trialEndsAt,
         } as any;
       },
     }),
