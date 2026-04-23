@@ -8,7 +8,7 @@ export default function Home() {
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition">
           <Image 
-            src="/logo-pedidosbot.png" 
+            src="/logo-rapidbot.png" 
             alt="PedidosBot Logo" 
             width={90} 
             height={90} 
