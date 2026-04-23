@@ -9,7 +9,7 @@ export default async function WhatsappPage() {
   const session = await auth();
   const tenantId = (session?.user as any)?.tenantId as string;
 
-  const waSession = await prisma.whatsAppSession.findUnique({
+  const waSession = await prisma.whatsAppSession.findFirst({
     where: { tenantId },
     select: {
       status: true,
@@ -20,10 +20,9 @@ export default async function WhatsappPage() {
     },
   });
 
-  const botBaseUrl =
-    process.env.NEXT_PUBLIC_BOT_WEBHOOK_URL
-      ? null
-      : (process.env.BOT_API_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const botBaseUrl = process.env.NEXT_PUBLIC_BOT_WEBHOOK_URL
+    ? null
+    : (process.env.BOT_API_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
   const webhookUrl = process.env.NEXT_PUBLIC_BOT_WEBHOOK_URL ?? `${botBaseUrl}/webhook`;
 
   return (

@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const session = await auth();
-  const tenantId = (session?.user as any)?.tenantId as string | undefined;
-  const userRole = (session?.user as any)?.role || "STAFF";
+  const tenantId = session?.user?.tenantId;
+  const userRole = session?.user?.role || "STAFF";
   const isStaff = userRole === "STAFF";
   if (!tenantId) return null;
 
@@ -35,7 +35,7 @@ export default async function Dashboard() {
       },
       _sum: { total: true },
     }),
-    prisma.whatsAppSession.findUnique({ where: { tenantId } }),
+    prisma.whatsAppSession.findFirst({ where: { tenantId } }),
     prisma.order.count({ where: { tenantId, status: "PENDING" } }),
     prisma.product.count({ where: { tenantId, available: true } }),
     prisma.deliveryZone.count({ where: { tenantId, active: true } }),
@@ -86,20 +86,28 @@ export default async function Dashboard() {
 
         {!isStaff && (
           <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <div className="text-xs uppercase tracking-wide text-slate-400">
-            Plan actual
-          </div>
-          <div className="mt-1 text-2xl font-bold text-slate-900">
-            {tenant?.plan || "TRIAL"}
-          </div>
-          {!connected && (
-            <Link
-              href="/dashboard/whatsapp"
-              className="mt-3 inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
-            >
-              Conectar WhatsApp
-            </Link>
-          )}
+            <div className="text-xs uppercase tracking-wide text-slate-400">
+              Plan actual
+            </div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">
+              {tenant?.plan || "TRIAL"}
+            </div>
+            <div className="mt-3 flex gap-3">
+              {!connected && (
+                <Link
+                  href="/dashboard/whatsapp"
+                  className="inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                >
+                  Conectar WhatsApp
+                </Link>
+              )}
+              <Link
+                href="/dashboard/billing"
+                className="inline-block rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Facturacion
+              </Link>
+            </div>
           </div>
         )}
       </div>
@@ -165,9 +173,20 @@ export default async function Dashboard() {
         </section>
       </div>
 
-      <h2 className="mb-3 text-lg font-bold">Secciones</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-bold">Secciones</h2>
+        {session.user?.role === "SUPER_ADMIN" && (
+          <Link
+            href="/dashboard/admin"
+            className="text-sm font-medium text-brand hover:underline"
+          >
+            Ver panel global
+          </Link>
+        )}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
-        {SECTIONS.filter(s => !isStaff || !s.adminOnly).map((section) => (
+        {SECTIONS.filter((section) => !isStaff || !section.adminOnly).map((section) => (
           <Link
             key={section.href}
             href={section.href}
@@ -258,6 +277,13 @@ const SECTIONS = [
     title: "Configuracion",
     desc: "Horario, datos del negocio y mensajes",
     href: "/dashboard/settings",
+    adminOnly: true,
+  },
+  {
+    icon: "$",
+    title: "Facturacion",
+    desc: "Revisa tu plan y gestiona pagos",
+    href: "/dashboard/billing",
     adminOnly: true,
   },
 ];

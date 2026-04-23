@@ -1,6 +1,10 @@
 // PedidosBot - Schema multi-tenant
 // Cada tabla tiene tenantId para aislar datos entre negocios
 
+generator client_root {
+  provider = "prisma-client-js"
+}
+
 generator client {
   provider = "prisma-client-js"
   output   = "../web/node_modules/.prisma/client"
@@ -58,6 +62,9 @@ model Tenant {
   // Facturación
   subscriptionStartedAt DateTime?
   subscriptionEndsAt    DateTime?
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  planStatus            String?   // Para compatibilidad con el webhook
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -70,7 +77,8 @@ model Tenant {
   orders          Order[]
   fiaoEntries     FiaoEntry[]
   deliveryZones   DeliveryZone[]
-  session         WhatsAppSession?
+  sessions        WhatsAppSession[]
+  analytics       AnalyticsEvent[]
   conversations   Conversation[]
 
   @@index([slug])
@@ -360,7 +368,7 @@ model DeliveryZone {
 // ============================================================
 model WhatsAppSession {
   id            String         @id @default(cuid())
-  tenantId      String         @unique
+  tenantId      String
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   status        SessionStatus  @default(DISCONNECTED)
@@ -408,4 +416,20 @@ model Conversation {
   updatedAt     DateTime @updatedAt
 
   @@index([tenantId])
+}
+
+// ============================================================
+// ANALYTICS - Seguimiento de eventos para el dashboard
+// ============================================================
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  type      String   // "MESSAGE_RECEIVED", "ORDER_CREATED", "WA_DISCONNECTED"
+  metadata  Json?    // Información extra (ej: { phone: "...", state: "..." })
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, type])
+  @@index([createdAt])
 }

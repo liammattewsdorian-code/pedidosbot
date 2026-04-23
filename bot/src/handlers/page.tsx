@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { createCheckoutSession } from "@/app/actions/stripe";
+import { createCheckoutSession } from "@/../../stripe";
 
 export default async function BillingPage() {
   const session = await auth();

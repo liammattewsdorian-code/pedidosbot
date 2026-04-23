@@ -4,19 +4,28 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix bot\" \"npm run dev --prefix web\"",
+    "dev:web": "npm run dev --prefix web",
+    "dev:bot": "npm run dev --prefix bot",
     "install-all": "npm install --prefix bot && npm install --prefix web",
     "prisma:push": "npx prisma db push --schema=prisma/schema.prisma",
     "build:web": "npx prisma generate --schema=prisma/schema.prisma && npm run build --prefix web",
-    "db:seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+    "db:seed": "npx prisma generate --schema=prisma/schema.prisma && npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "db:studio": "npx prisma studio --schema=prisma/schema.prisma"
   },
   "prisma": {
-    "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "seed": "npx prisma generate --schema=prisma/schema.prisma && npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.6",
+    "concurrently": "^8.2.2",
+    "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
     "openai": "^4.56.0"
   }
 }

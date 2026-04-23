@@ -22,11 +22,11 @@ export async function handleIncomingMessage(tenantId, client, message) {
   if (!tenant) return;
 
   // Verificación de Trial y Plan
-  const isExpired = tenant.planStatus === 'TRIAL' && 
-                    tenant.trialEndsAt && 
-                    new Date() > new Date(tenant.trialEndsAt);
+  const isExpired = tenant.status === 'TRIAL' && 
+                    tenant.subscriptionEndsAt && 
+                    new Date() > new Date(tenant.subscriptionEndsAt);
   
-  if (tenant.planStatus === 'EXPIRED' || isExpired) {
+  if (tenant.status === 'SUSPENDED' || isExpired) {
     return; // El bot ignora el mensaje si el negocio no está al día
   }
 
@@ -44,6 +44,15 @@ export async function handleIncomingMessage(tenantId, client, message) {
     create: { tenantId, customerId: customer.id, state: 'MAIN_MENU' },
     update: { lastMessageAt: new Date() },
   });
+
+  // Registrar evento de analítica (sin bloquear el flujo)
+  prisma.analyticsEvent.create({
+    data: {
+      tenantId,
+      type: 'MESSAGE_RECEIVED',
+      metadata: { phone, state: conversation.state }
+    }
+  }).catch(() => {}); 
 
   log.debug(
     { from: phone, state: conversation.state, text: message.body?.slice(0, 80) },
