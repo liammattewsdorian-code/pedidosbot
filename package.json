@@ -14,9 +14,11 @@
     "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "prisma": "^5.22.0"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "openai": "^4.56.0"
   }
 }
