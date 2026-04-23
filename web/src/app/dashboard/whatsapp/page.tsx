@@ -20,7 +20,11 @@ export default async function WhatsappPage() {
     },
   });
 
-  const webhookUrl = process.env.NEXT_PUBLIC_BOT_WEBHOOK_URL ?? `${process.env.NEXT_PUBLIC_APP_URL}/webhook`;
+  const botBaseUrl =
+    process.env.NEXT_PUBLIC_BOT_WEBHOOK_URL
+      ? null
+      : (process.env.BOT_API_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const webhookUrl = process.env.NEXT_PUBLIC_BOT_WEBHOOK_URL ?? `${botBaseUrl}/webhook`;
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">

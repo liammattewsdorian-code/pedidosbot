@@ -81,11 +81,8 @@ export function OrderBoard({
     handleStatusChange(orderId, "CANCELLED");
   };
 
-  const handleViewOrder = async (order: Order) => {
+  const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
-    if (order.status === "PENDING") {
-      fetch(`/api/proxy/seen?orderId=${order.id}`, { method: "POST" }).catch(() => {});
-    }
   };
 
   const pending  = orders.filter((o) => o.status === "PENDING");

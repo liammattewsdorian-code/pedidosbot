@@ -40,6 +40,7 @@ export default async function SettingsPage() {
       googleMapsUrl: true,
       instagramUrl: true,
       websiteUrl: true,
+      logoUrl: true,
       schedule: true,
     },
   });
@@ -221,6 +222,9 @@ export default async function SettingsPage() {
             </Field>
             <Field label="Sitio web">
               <input name="websiteUrl" defaultValue={tenant.websiteUrl || ""} className={input} placeholder="https://tunegocio.com" />
+            </Field>
+            <Field label="Logo URL">
+              <input name="logoUrl" defaultValue={tenant.logoUrl || ""} className={input} placeholder="https://cdn.tunegocio.com/logo.png" />
             </Field>
           </div>
         </Card>

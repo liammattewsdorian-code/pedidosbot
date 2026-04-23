@@ -34,9 +34,10 @@ export async function updateTenantSettingsAction(formData: FormData) {
 
   const name = String(formData.get("name") || "").trim();
   const whatsappNumber = String(formData.get("whatsappNumber") || "").replace(/\D/g, "");
+  const exchangeRate = Number(formData.get("exchangeRate") || 0);
 
-  if (!name || !whatsappNumber) {
-    throw new Error("Nombre y WhatsApp son obligatorios");
+  if (!name || !whatsappNumber || exchangeRate <= 0) {
+    throw new Error("Nombre, WhatsApp y tasa de cambio son obligatorios");
   }
 
   // Construir schedule JSON desde los campos del formulario
@@ -62,12 +63,14 @@ export async function updateTenantSettingsAction(formData: FormData) {
       timezone: String(formData.get("timezone") || "America/Santo_Domingo"),
       currency: String(formData.get("currency") || "DOP"),
       language: (formData.get("language") as any) || "ES",
+      exchangeRate,
       businessType: (formData.get("businessType") as any) || "RESTAURANT",
       welcomeMessage: nullable(formData.get("welcomeMessage")),
       closedMessage: nullable(formData.get("closedMessage")),
       googleMapsUrl: optionalUrl(formData.get("googleMapsUrl")),
       instagramUrl: optionalUrl(formData.get("instagramUrl")),
       websiteUrl: optionalUrl(formData.get("websiteUrl")),
+      logoUrl: optionalUrl(formData.get("logoUrl")),
       deliveryEnabled: formData.get("deliveryEnabled") === "on",
       fiaoEnabled: formData.get("fiaoEnabled") === "on",
       schedule,

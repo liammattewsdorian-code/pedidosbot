@@ -33,4 +33,9 @@ export const botApi = {
       method: "POST",
       body: JSON.stringify({ to, message }),
     }),
+
+  dispatchOrder: (tenantId: string, orderId: string) =>
+    call(`/api/sessions/${tenantId}/orders/${orderId}/dispatch`, {
+      method: "POST",
+    }),
 };
