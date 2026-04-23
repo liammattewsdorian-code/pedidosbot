@@ -10,8 +10,8 @@ export default function Home() {
           <Image 
             src="/logo-rapidbot.png" 
             alt="Rapid Bot Logo" 
-            width={64} 
-            height={64} 
+            width={90} 
+            height={90} 
             className="rounded-xl shadow-md"
           />
           <span className="font-bold text-2xl tracking-tight text-slate-900">Rapid Bot</span>
