@@ -8,6 +8,7 @@ const PORT = process.env.BOT_PORT || 3010;
 
 async function main() {
   logger.info('PedidosBot service starting (Meta Cloud API mode)');
+  logger.info(`BOT_API_SECRET configured: ${process.env.BOT_API_SECRET ? 'YES (length=' + process.env.BOT_API_SECRET.length + ')' : 'NO - missing!'}`);
 
   const app = express();
   app.use(express.json());
