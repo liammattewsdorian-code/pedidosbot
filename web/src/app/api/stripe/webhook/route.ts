@@ -80,10 +80,11 @@ export async function POST(req: Request) {
     }
 
     case "customer.subscription.updated": {
-      const tenantId = session.metadata?.tenantId;
-      if (tenantId && session.status === "active") {
-        await prisma.tenant.update({
-          where: { id: tenantId },
+      // subscription events don't carry checkout metadata — look up by subscriptionId
+      const subscriptionId = session.id as string;
+      if (session.status === "active" && subscriptionId) {
+        await prisma.tenant.updateMany({
+          where: { stripeSubscriptionId: subscriptionId },
           data: { status: "ACTIVE" },
         });
       }
