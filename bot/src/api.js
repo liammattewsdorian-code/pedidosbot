@@ -34,9 +34,11 @@ async function saveSessionByTenantId(tenantId, data) {
 export function createApiRouter() {
   const router = Router();
 
+  const BOT_SECRET = process.env.BOT_API_SECRET || 'pedidosbot_internal_2024';
+
   router.use((req, res, next) => {
     const secret = req.headers['x-api-secret'];
-    if (!process.env.BOT_API_SECRET || secret !== process.env.BOT_API_SECRET) {
+    if (secret !== BOT_SECRET) {
       return res.status(401).json({ error: 'unauthorized' });
     }
     next();

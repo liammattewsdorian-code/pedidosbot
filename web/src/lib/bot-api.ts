@@ -1,5 +1,5 @@
 const BOT_URL = process.env.BOT_API_URL || "http://localhost:3010";
-const SECRET  = process.env.BOT_API_SECRET || "dev_secret";
+const SECRET  = process.env.BOT_API_SECRET || "pedidosbot_internal_2024";
 
 async function call(path: string, init: RequestInit = {}) {
   const res = await fetch(`${BOT_URL}${path}`, {
