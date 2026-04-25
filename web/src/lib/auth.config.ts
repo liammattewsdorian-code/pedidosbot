@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import { TenantStatus, UserRole } from "@prisma/client";
+import { prisma } from "./prisma";
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
