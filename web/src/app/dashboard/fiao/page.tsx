@@ -44,8 +44,8 @@ export default async function FiaoPage() {
 
   return (
     <main className="max-w-5xl mx-auto px-6 py-8">
-      <h1 className="mb-1 text-3xl font-bold">Control de fiao</h1>
-      <p className="mb-8 text-slate-500">
+      <h1 className="mb-1 text-3xl font-bold text-white">Control de fiao</h1>
+      <p className="mb-8 text-gray-400">
         Registra abonos, ajustes manuales y revisa balances por cliente.
       </p>
 
@@ -64,10 +64,10 @@ export default async function FiaoPage() {
         />
       </section>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold">Registrar movimiento</h2>
+      <section className="mb-6 rounded-2xl border border-gray-800 bg-[#111827] p-6">
+        <h2 className="mb-4 text-lg font-bold text-white">Registrar movimiento</h2>
         <form action={createFiaoEntryAction} className="grid gap-3 md:grid-cols-2">
-          <select name="customerId" required className="rounded-lg border px-4 py-2">
+          <select name="customerId" required className="rounded-lg border border-gray-700 bg-gray-800 text-gray-200 px-4 py-2">
             <option value="">Selecciona un cliente</option>
             {customers.map((customer: CustomerWithFiao) => (
               <option key={customer.id} value={customer.id}>
@@ -75,11 +75,11 @@ export default async function FiaoPage() {
               </option>
             ))}
           </select>
-          <select name="mode" defaultValue="PAYMENT" className="rounded-lg border px-4 py-2">
+          <select name="mode" defaultValue="PAYMENT" className="rounded-lg border border-gray-700 bg-gray-800 text-gray-200 px-4 py-2">
             <option value="PAYMENT">Abono</option>
             <option value="ADJUSTMENT">Ajuste manual</option>
           </select>
-          <select name="direction" defaultValue="decrease" className="rounded-lg border px-4 py-2">
+          <select name="direction" defaultValue="decrease" className="rounded-lg border border-gray-700 bg-gray-800 text-gray-200 px-4 py-2">
             <option value="decrease">Reducir balance</option>
             <option value="increase">Aumentar balance</option>
           </select>
@@ -90,14 +90,14 @@ export default async function FiaoPage() {
             step="0.01"
             required
             placeholder="Monto"
-            className="rounded-lg border px-4 py-2"
+            className="rounded-lg border border-gray-700 bg-gray-800 text-gray-200 placeholder-gray-500 px-4 py-2"
           />
           <input
             name="notes"
             placeholder="Nota opcional"
-            className="rounded-lg border px-4 py-2 md:col-span-2"
+            className="rounded-lg border border-gray-700 bg-gray-800 text-gray-200 placeholder-gray-500 px-4 py-2 md:col-span-2"
           />
-          <button className="rounded-lg bg-brand px-4 py-2 font-semibold text-white md:col-span-2">
+          <button className="rounded-lg bg-green-500 hover:bg-green-600 px-4 py-2 font-semibold text-white md:col-span-2 transition-colors">
             Guardar movimiento
           </button>
         </form>

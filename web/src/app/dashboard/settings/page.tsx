@@ -51,8 +51,8 @@ export default async function SettingsPage() {
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="mb-1 text-3xl font-bold">Configuración</h1>
-      <p className="mb-8 text-slate-500">
+      <h1 className="mb-1 text-3xl font-bold text-white">Configuración</h1>
+      <p className="mb-8 text-gray-400">
         Edita los datos del negocio, horarios y mensajes del bot.
       </p>
 
@@ -144,7 +144,7 @@ export default async function SettingsPage() {
 
         {/* ── Horario ── */}
         <Card title="Horario de atención">
-          <p className="mb-4 text-sm text-slate-500">
+          <p className="mb-4 text-sm text-gray-500">
             Si no defines horario, el bot responde 24/7. Marca "Cerrado" para los días que no trabajes.
           </p>
           <div className="space-y-2">
@@ -154,9 +154,9 @@ export default async function SettingsPage() {
               const open = isClosed ? "" : (day?.open ?? "08:00");
               const close = isClosed ? "" : (day?.close ?? "22:00");
               return (
-                <div key={key} className="grid grid-cols-[6rem_auto_auto_1fr] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <span className="text-sm font-medium text-slate-700">{label}</span>
-                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                <div key={key} className="grid grid-cols-[6rem_auto_auto_1fr] items-center gap-3 rounded-xl border border-gray-800 bg-gray-800/30 px-4 py-3">
+                  <span className="text-sm font-medium text-gray-300">{label}</span>
+                  <label className="flex items-center gap-2 text-sm text-gray-400">
                     <input
                       type="checkbox"
                       name={`schedule_${key}_closed`}
@@ -230,14 +230,14 @@ export default async function SettingsPage() {
         </Card>
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-5 py-4 text-sm text-slate-600">
+        <div className="flex items-center justify-between rounded-xl bg-gray-800/30 border border-gray-800 px-5 py-4 text-sm text-gray-400">
           <div>
-            <div className="font-semibold text-slate-800">Plan actual</div>
+            <div className="font-semibold text-gray-200">Plan actual</div>
             <div>{tenant.plan}</div>
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-brand px-6 py-2.5 font-semibold text-white transition hover:opacity-90"
+            className="rounded-lg bg-green-500 hover:bg-green-600 px-6 py-2.5 font-semibold text-white transition"
           >
             Guardar cambios
           </button>
@@ -248,12 +248,12 @@ export default async function SettingsPage() {
   );
 }
 
-const input = "w-full rounded-lg border border-slate-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30";
+const input = "w-full rounded-lg border border-gray-700 bg-gray-800 text-gray-200 placeholder-gray-500 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
-      <h2 className="mb-5 text-base font-bold text-slate-800">{title}</h2>
+    <section className="rounded-2xl border border-gray-800 bg-[#111827] p-6">
+      <h2 className="mb-5 text-base font-bold text-white">{title}</h2>
       {children}
     </section>
   );
@@ -262,29 +262,21 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="mb-1 text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
+      <div className="mb-1 text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</div>
       {children}
     </label>
   );
 }
 
 function Toggle({
-  name,
-  defaultChecked,
-  title,
-  desc,
-}: {
-  name: string;
-  defaultChecked: boolean;
-  title: string;
-  desc: string;
-}) {
+  name, defaultChecked, title, desc,
+}: { name: string; defaultChecked: boolean; title: string; desc: string }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-brand/40">
-      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="h-4 w-4 rounded" />
+    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-800 bg-gray-800/30 p-4 transition hover:border-green-500/30">
+      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="h-4 w-4 rounded accent-green-500" />
       <div>
-        <div className="font-semibold text-slate-800">{title}</div>
-        <div className="text-sm text-slate-500">{desc}</div>
+        <div className="font-semibold text-gray-200">{title}</div>
+        <div className="text-sm text-gray-500">{desc}</div>
       </div>
     </label>
   );
