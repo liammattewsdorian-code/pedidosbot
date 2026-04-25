@@ -11,66 +11,99 @@ export default async function DashboardLayout({
   if (!session?.user) redirect("/login");
 
   const user = session.user as any;
+  const isSuperAdmin = user.role === "SUPER_ADMIN";
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+    <div className="flex h-screen bg-[#0b0f14] text-gray-200 overflow-hidden">
+
+      {/* SIDEBAR */}
+      <aside className="w-64 flex-shrink-0 flex flex-col bg-[#0f172a] border-r border-gray-800">
+
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-gray-800">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white">
+            <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center text-sm font-bold text-white">
               PB
             </div>
+            <span className="font-bold text-white text-lg">PedidosBot</span>
+          </Link>
+        </div>
+
+        {/* Negocio actual */}
+        <div className="px-5 py-3 border-b border-gray-800">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Negocio</p>
+          <p className="text-sm font-semibold text-gray-200 truncate">{user.tenantName || "Mi negocio"}</p>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <span className="text-base">{link.icon}</span>
+              {link.label}
+            </Link>
+          ))}
+
+          {isSuperAdmin && (
+            <Link
+              href="/dashboard/admin"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-colors mt-4 border border-purple-500/20"
+            >
+              <span className="text-base">⚡</span>
+              Master Control
+            </Link>
+          )}
+        </nav>
+
+        {/* Plan + Usuario */}
+        <div className="border-t border-gray-800 px-4 py-4 space-y-3">
+          <Link href="/dashboard/billing" className="flex items-center justify-between px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 hover:bg-green-500/15 transition-colors">
             <div>
-              <div className="font-bold text-slate-900">PedidosBot</div>
-              <div className="text-xs text-slate-500">{user.tenantName}</div>
+              <p className="text-xs text-gray-400">Plan actual</p>
+              <p className="text-sm font-bold text-green-400">{user.tenantPlan || "TRIAL"}</p>
             </div>
+            <span className="text-gray-500 text-xs">→</span>
           </Link>
 
-          <nav className="hidden gap-2 text-sm lg:flex">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-full px-3 py-2 text-slate-600 transition hover:bg-slate-100 hover:text-brand"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <div className="text-sm font-semibold">{user.name}</div>
-              <div className="text-xs text-slate-500">Panel del negocio</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">
+                {(user.name || "U").charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-300 truncate max-w-[100px]">{user.name || "Usuario"}</p>
+                <p className="text-[10px] text-gray-500">Administrador</p>
+              </div>
             </div>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <button
-                type="submit"
-                className="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:border-red-200 hover:text-red-600"
-              >
+            <form action={async () => { "use server"; await signOut({ redirectTo: "/" }); }}>
+              <button type="submit" className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1">
                 Salir
               </button>
             </form>
           </div>
         </div>
-      </header>
+      </aside>
 
-      {children}
+      {/* MAIN CONTENT */}
+      <main className="flex-1 overflow-y-auto">
+        {children}
+      </main>
+
     </div>
   );
 }
 
 const NAV_LINKS = [
-  { href: "/dashboard", label: "Inicio" },
-  { href: "/dashboard/whatsapp", label: "WhatsApp" },
-  { href: "/dashboard/menu", label: "Menu" },
-  { href: "/dashboard/orders", label: "Pedidos" },
-  { href: "/dashboard/fiao", label: "Fiao" },
-  { href: "/dashboard/zones", label: "Zonas" },
-  { href: "/dashboard/settings", label: "Config" },
+  { href: "/dashboard",            icon: "🏠", label: "Inicio" },
+  { href: "/dashboard/orders",     icon: "📦", label: "Pedidos" },
+  { href: "/dashboard/menu",       icon: "🧾", label: "Menú" },
+  { href: "/dashboard/fiao",       icon: "💳", label: "Fiao" },
+  { href: "/dashboard/zones",      icon: "🗺️",  label: "Zonas" },
+  { href: "/dashboard/whatsapp",   icon: "📱", label: "WhatsApp" },
+  { href: "/dashboard/settings",   icon: "⚙️",  label: "Configuración" },
+  { href: "/dashboard/billing",    icon: "💰", label: "Facturación" },
 ];
