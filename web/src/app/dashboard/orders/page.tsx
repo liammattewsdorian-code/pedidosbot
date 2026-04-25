@@ -23,8 +23,8 @@ export default async function OrdersPage() {
   return (
     <main className="px-6 py-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Gestión de Pedidos</h1>
-        <p className="text-slate-500">
+        <h1 className="text-3xl font-bold text-white">Gestión de Pedidos</h1>
+        <p className="text-gray-400">
           Confirma, prepara y despacha los pedidos de WhatsApp en tiempo real.
         </p>
       </header>

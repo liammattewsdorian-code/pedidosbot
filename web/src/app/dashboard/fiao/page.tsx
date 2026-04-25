@@ -103,61 +103,40 @@ export default async function FiaoPage() {
         </form>
       </section>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold">Balances actuales</h2>
+      <section className="mb-6 rounded-2xl border border-gray-800 bg-[#111827] p-6">
+        <h2 className="mb-4 text-lg font-bold text-white">Balances actuales</h2>
         {customersWithBalance.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 p-6 text-sm text-slate-500">
-            No hay balances pendientes.
-          </div>
+          <div className="rounded-xl bg-gray-800/30 p-6 text-sm text-gray-500 text-center">No hay balances pendientes.</div>
         ) : (
           <div className="space-y-3">
             {customersWithBalance.map((customer) => (
-              <div
-                key={customer.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 p-4"
-              >
+              <div key={customer.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-800/30 p-4">
                 <div>
-                  <div className="font-semibold">{customer.name}</div>
-                  <div className="text-sm text-slate-500">{customer.phone}</div>
+                  <div className="font-semibold text-gray-200">{customer.name}</div>
+                  <div className="text-sm text-gray-500">{customer.phone}</div>
                 </div>
-                <div className="text-right font-semibold text-amber-700">
-                  {money(customer.balance)}
-                </div>
+                <div className="text-right font-bold text-amber-400">{money(customer.balance)}</div>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold">Movimientos recientes</h2>
+      <section className="rounded-2xl border border-gray-800 bg-[#111827] p-6">
+        <h2 className="mb-4 text-lg font-bold text-white">Movimientos recientes</h2>
         {entries.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 p-6 text-sm text-slate-500">
-            Aun no hay movimientos de fiao registrados.
-          </div>
+          <div className="rounded-xl bg-gray-800/30 p-6 text-sm text-gray-500 text-center">Aun no hay movimientos de fiao registrados.</div>
         ) : (
           <div className="space-y-3">
             {entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 p-4"
-              >
+              <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-800/30 p-4">
                 <div>
-                  <div className="font-semibold">
-                    {entry.customer.name || entry.customer.phone}
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    {entry.type}
-                    {entry.notes ? ` · ${entry.notes}` : ""}
-                  </div>
+                  <div className="font-semibold text-gray-200">{entry.customer.name || entry.customer.phone}</div>
+                  <div className="text-sm text-gray-500">{entry.type}{entry.notes ? ` · ${entry.notes}` : ""}</div>
                 </div>
                 <div className="text-right">
-                  <div className={`font-semibold ${Number(entry.amount) < 0 ? "text-red-700" : "text-slate-900"}`}>
-                    {signedMoney(Number(entry.amount))}
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    Balance: {money(Number(entry.balance))}
-                  </div>
+                  <div className={`font-bold ${Number(entry.amount) < 0 ? "text-red-400" : "text-green-400"}`}>{signedMoney(Number(entry.amount))}</div>
+                  <div className="text-sm text-gray-500">Balance: {money(Number(entry.balance))}</div>
                 </div>
               </div>
             ))}
@@ -170,9 +149,9 @@ export default async function FiaoPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold">{value}</div>
+    <div className="rounded-2xl border border-gray-800 bg-[#111827] p-5">
+      <div className="text-sm text-gray-400">{label}</div>
+      <div className="mt-1 text-2xl font-bold text-white">{value}</div>
     </div>
   );
 }
