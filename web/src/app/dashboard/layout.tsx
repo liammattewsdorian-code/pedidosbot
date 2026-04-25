@@ -12,7 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <SidebarClient
       userName={user.name || ""}
       tenantName={user.tenantName || ""}
-      tenantPlan={user.tenantPlan || user.role || "TRIAL"}
+      tenantPlan={user.tenantPlan || "TRIAL"}
       isSuperAdmin={user.role === "SUPER_ADMIN"}
     >
       {children}
