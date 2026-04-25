@@ -8,7 +8,7 @@ export const authConfig: NextAuthConfig = {
   pages: { signIn: "/login" },
   providers: [],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -17,6 +17,16 @@ export const authConfig: NextAuthConfig = {
         token.tenantName = user.tenantName;
         token.tenantStatus = user.tenantStatus;
         token.trialEndsAt = user.trialEndsAt;
+      }
+      // Refresh role from DB on each token update so DB changes take effect
+      if (!user && token.id && typeof token.id === "string") {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: { role: true },
+          });
+          if (dbUser) token.role = dbUser.role;
+        } catch { /* silently skip if DB unreachable */ }
       }
       return token;
     },
